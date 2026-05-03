@@ -1,0 +1,596 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   ARENA AI DEBATE — PREMIUM DESIGN SYSTEM
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Core palette */
+    --arena-navy-950: 222 47% 5%;
+    --arena-navy-900: 222 47% 8%;
+    --arena-navy-800: 222 44% 12%;
+    --arena-navy-700: 222 40% 18%;
+    --arena-navy-600: 222 36% 26%;
+
+    /* Accent: Cyan */
+    --arena-cyan: 185 95% 55%;
+    --arena-cyan-glow: 185 95% 65%;
+
+    /* Accent: Violet */
+    --arena-violet: 265 90% 62%;
+    --arena-violet-glow: 265 90% 72%;
+
+    /* Accent: Rose */
+    --arena-rose: 340 90% 60%;
+    --arena-rose-glow: 340 90% 70%;
+
+    /* Accent: Gold */
+    --arena-gold: 40 95% 60%;
+
+    /* Agent colors */
+    --agent-analyst: 217 91% 60%;
+    --agent-optimist: 160 84% 39%;
+    --agent-devil: 0 84% 60%;
+    --agent-mediator: 263 70% 50%;
+
+    /* Shadcn compatibility */
+    --background: 222 47% 5%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 185 95% 55%;
+    --primary-foreground: 222 47% 5%;
+    --secondary: 222 44% 12%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 44% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 265 90% 62%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 222 40% 16%;
+    --input: 222 40% 16%;
+    --ring: 185 95% 55%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground antialiased;
+    background-color: hsl(var(--arena-navy-950));
+  }
+}
+
+/* ============================================================
+   ANIMATED GRADIENT MESH BACKGROUND
+   ============================================================ */
+
+.bg-arena-mesh {
+  position: relative;
+  background: hsl(var(--arena-navy-950));
+  overflow: hidden;
+}
+
+.bg-arena-mesh::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(ellipse at 20% 50%, hsla(265, 90%, 62%, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, hsla(185, 95%, 55%, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 80%, hsla(340, 90%, 60%, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, hsla(265, 90%, 62%, 0.04) 0%, transparent 40%);
+  animation: meshFloat 20s ease-in-out infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes meshFloat {
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(2%, -2%) rotate(1deg);
+  }
+
+  66% {
+    transform: translate(-1%, 1%) rotate(-0.5deg);
+  }
+}
+
+/* Grain texture overlay */
+.bg-arena-mesh::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ============================================================
+   GLASSMORPHISM UTILITIES
+   ============================================================ */
+
+.glass {
+  background: hsla(222, 47%, 8%, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsla(210, 40%, 96%, 0.08);
+}
+
+.glass-strong {
+  background: hsla(222, 47%, 10%, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid hsla(210, 40%, 96%, 0.12);
+}
+
+.glass-subtle {
+  background: hsla(222, 47%, 8%, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(210, 40%, 96%, 0.05);
+}
+
+/* ============================================================
+   GLOW UTILITIES
+   ============================================================ */
+
+.glow-cyan {
+  box-shadow: 0 0 20px hsla(185, 95%, 55%, 0.15), 0 0 60px hsla(185, 95%, 55%, 0.05);
+}
+
+.glow-violet {
+  box-shadow: 0 0 20px hsla(265, 90%, 62%, 0.15), 0 0 60px hsla(265, 90%, 62%, 0.05);
+}
+
+.glow-rose {
+  box-shadow: 0 0 20px hsla(340, 90%, 60%, 0.15), 0 0 60px hsla(340, 90%, 60%, 0.05);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px hsla(40, 95%, 60%, 0.15), 0 0 60px hsla(40, 95%, 60%, 0.05);
+}
+
+/* ============================================================
+   GRADIENT TEXT
+   ============================================================ */
+
+.gradient-text-cyan {
+  background: linear-gradient(135deg, hsl(185, 95%, 55%), hsl(200, 95%, 65%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-hero {
+  background: linear-gradient(135deg, hsl(185, 95%, 60%), hsl(265, 90%, 70%), hsl(340, 90%, 65%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-violet {
+  background: linear-gradient(135deg, hsl(265, 90%, 62%), hsl(285, 85%, 70%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, hsl(40, 95%, 55%), hsl(35, 95%, 70%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+/* Fade in up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Shimmer sweep */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      hsla(185, 95%, 65%, 0.08) 50%,
+      transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Pulse glow */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Orbital spin */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-orbit {
+  animation: orbit 1.5s linear infinite;
+}
+
+/* Reverse orbit */
+@keyframes orbitReverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-orbit-reverse {
+  animation: orbitReverse 2s linear infinite;
+}
+
+/* Float */
+@keyframes floatSlow {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+/* Gradient border animation */
+@keyframes borderGlow {
+
+  0%,
+  100% {
+    border-color: hsla(185, 95%, 55%, 0.3);
+  }
+
+  33% {
+    border-color: hsla(265, 90%, 62%, 0.3);
+  }
+
+  66% {
+    border-color: hsla(340, 90%, 60%, 0.3);
+  }
+}
+
+.animate-border-glow {
+  animation: borderGlow 4s ease-in-out infinite;
+}
+
+/* Slide in from left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s ease-out forwards;
+}
+
+/* Scale in */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* Spin */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(222, 47%, 5%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsla(185, 95%, 55%, 0.3), hsla(265, 90%, 62%, 0.3));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsla(185, 95%, 55%, 0.5), hsla(265, 90%, 62%, 0.5));
+}
+
+/* ============================================================
+   FOCUS STYLES
+   ============================================================ */
+
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--arena-navy-950)), 0 0 0 4px hsla(185, 95%, 55%, 0.5);
+}
+
+/* ============================================================
+   CARD HOVER EFFECTS
+   ============================================================ */
+
+.card-hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px hsla(265, 90%, 62%, 0.1), 0 4px 12px hsla(0, 0%, 0%, 0.2);
+}
+
+.card-hover-glow {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover-glow:hover {
+  border-color: hsla(185, 95%, 55%, 0.2);
+  box-shadow: 0 0 30px hsla(185, 95%, 55%, 0.08);
+}
+
+/* ============================================================
+   DECORATIVE ELEMENTS
+   ============================================================ */
+
+/* Gradient divider */
+.gradient-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsla(185, 95%, 55%, 0.3), hsla(265, 90%, 62%, 0.3), transparent);
+}
+
+/* Section glow orb */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+/* ============================================================
+   AGENT COLOR UTILITIES
+   ============================================================ */
+
+.agent-border-analyst {
+  border-color: hsla(217, 91%, 60%, 0.3);
+}
+
+.agent-border-optimist {
+  border-color: hsla(160, 84%, 39%, 0.3);
+}
+
+.agent-border-devil {
+  border-color: hsla(0, 84%, 60%, 0.3);
+}
+
+.agent-border-mediator {
+  border-color: hsla(263, 70%, 50%, 0.3);
+}
+
+.agent-glow-analyst {
+  box-shadow: 0 0 20px hsla(217, 91%, 60%, 0.12);
+}
+
+.agent-glow-optimist {
+  box-shadow: 0 0 20px hsla(160, 84%, 39%, 0.12);
+}
+
+.agent-glow-devil {
+  box-shadow: 0 0 20px hsla(0, 84%, 60%, 0.12);
+}
+
+.agent-glow-mediator {
+  box-shadow: 0 0 20px hsla(263, 70%, 50%, 0.12);
+}
+
+/* ============================================================
+   MARKDOWN CONTENT STYLING
+   ============================================================ */
+
+.markdown-content {
+  @apply space-y-4;
+}
+
+.markdown-content.compact {
+  @apply space-y-0;
+}
+
+.markdown-content.compact p {
+  @apply m-0;
+}
+
+.markdown-content p {
+  @apply leading-relaxed;
+}
+
+.markdown-content strong {
+  @apply font-bold text-white;
+}
+
+.markdown-content em {
+  @apply italic text-gray-200;
+}
+
+.markdown-content ul {
+  @apply list-disc list-outside space-y-1 my-3 ml-5;
+}
+
+.markdown-content ol {
+  @apply list-decimal list-outside space-y-1 my-3 ml-5;
+}
+
+.markdown-content li {
+  @apply pl-1;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  @apply font-bold text-white mt-6 mb-3 font-heading;
+}
+
+.markdown-content h1 {
+  @apply text-xl;
+}
+
+.markdown-content h2 {
+  @apply text-lg;
+}
+
+.markdown-content h3 {
+  @apply text-base;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-arena-violet/50 pl-4 py-1 italic bg-white/[0.03] rounded-r-md my-4;
+}
+
+.markdown-content code {
+  @apply bg-white/[0.08] px-1.5 py-0.5 rounded text-arena-cyan text-[0.9em] font-mono;
+}
+
+.markdown-content pre {
+  @apply bg-black/40 p-4 rounded-xl border border-white/10 overflow-x-auto my-4;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0 text-gray-300;
+}
+
+.markdown-content a {
+  @apply text-arena-cyan hover:underline;
+}
+
+.markdown-content hr {
+  @apply border-white/10 my-6;
+}
+
+.markdown-content table {
+  @apply w-full border-collapse my-4;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-white/10 p-2 text-left;
+}
+
+.markdown-content th {
+  @apply bg-white/[0.05] font-bold;
+}

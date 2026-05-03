@@ -1,0 +1,66 @@
+// Prisma schema for Arena AI Debate Platform
+// This is used for type-safety and can sync with backend SQLite database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum DebateStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model Debate {
+  id            String        @id @default(uuid())
+  topic         String
+  status        DebateStatus  @default(PENDING)
+  userId        String?       @map("user_id")
+  
+  // JSON fields for storing complex data
+  arguments     String?       // JSON string
+  consensus     String?       // JSON string
+  
+  // Metadata
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime?     @updatedAt @map("updated_at")
+  completedAt   DateTime?     @map("completed_at")
+  
+  // Statistics
+  totalRounds   Int           @default(3) @map("total_rounds")
+  totalArguments Int          @default(0) @map("total_arguments")
+  
+  // Relations
+  argumentsList Argument[]
+  
+  @@index([userId])
+  @@map("debates")
+}
+
+model Argument {
+  id           String   @id @default(uuid())
+  debateId     String   @map("debate_id")
+  
+  // Agent info
+  agentName    String   @map("agent_name")
+  agentRole    String   @map("agent_role")
+  
+  // Argument content
+  content      String
+  roundNumber  Int      @map("round_number")
+  
+  // Metadata
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  debate       Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  
+  @@index([debateId])
+  @@map("arguments")
+}
