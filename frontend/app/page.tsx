@@ -68,6 +68,11 @@ export default function HomePage() {
     e.preventDefault();
     if (!topic.trim()) return;
 
+    if (topic.trim().length < 10) {
+      alert("Topik debat harus lebih dari 10 karakter!");
+      return;
+    }
+
     setIsStarting(true);
     const streamId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -208,8 +213,10 @@ export default function HomePage() {
       </section>
 
       {/* Recent Debates Section */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
+      <section className="space-y-6 relative">
+        <div className="glow-orb w-[300px] h-[300px] bg-arena-cyan -left-20 top-0 opacity-[0.03]" />
+
+        <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 rounded-full bg-gradient-to-b from-arena-cyan to-arena-violet" />
             <h2 className="text-2xl sm:text-3xl font-bold text-white font-heading">

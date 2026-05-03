@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 import logging
 import json
 import asyncio
+from datetime import timezone
 
 from database import get_db
 from models.debate import Debate, Argument
@@ -286,8 +287,8 @@ async def get_debate(
             consensus=consensus,
             total_rounds=debate.total_rounds,
             total_arguments=debate.total_arguments,
-            created_at=debate.created_at.isoformat() if debate.created_at else "",
-            completed_at=debate.completed_at.isoformat() if debate.completed_at else None
+            created_at=debate.created_at.replace(tzinfo=timezone.utc).isoformat() if debate.created_at else "",
+            completed_at=debate.completed_at.replace(tzinfo=timezone.utc).isoformat() if debate.completed_at else None
         )
         
     except HTTPException:
@@ -369,8 +370,8 @@ async def list_debates(
                     consensus=consensus,
                     total_rounds=debate.total_rounds,
                     total_arguments=debate.total_arguments,
-                    created_at=debate.created_at.isoformat() if debate.created_at else "",
-                    completed_at=debate.completed_at.isoformat() if debate.completed_at else None
+                    created_at=debate.created_at.replace(tzinfo=timezone.utc).isoformat() if debate.created_at else "",
+                    completed_at=debate.completed_at.replace(tzinfo=timezone.utc).isoformat() if debate.completed_at else None
                 )
             )
         

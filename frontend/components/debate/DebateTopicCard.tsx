@@ -23,29 +23,29 @@ export interface DebateTopicCardProps {
    * The debate data to display
    */
   debate: Debate;
-  
+
   /**
    * Callback when view button is clicked
    */
   onView?: (debateId: string) => void;
-  
+
   /**
    * Callback when delete button is clicked
    */
   onDelete?: (debateId: string) => void;
-  
+
   /**
    * Whether to show action buttons
    * @default true
    */
   showActions?: boolean;
-  
+
   /**
    * Index for staggered animation
    * @default 0
    */
   index?: number;
-  
+
   /**
    * Additional CSS classes
    */
@@ -119,125 +119,134 @@ export const DebateTopicCard = React.forwardRef<HTMLDivElement, DebateTopicCardP
         ref={ref}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: index * 0.05 }}
-        className={cn("w-full", className)}
+        transition={{ duration: 0.4, delay: index * 0.05 }}
+        className={cn("w-full h-full", className)}
       >
         <Card
+          variant="glass"
           hoverable
           className={cn(
-            "cursor-pointer transition-all duration-200",
-            onView && "hover:scale-[1.02]"
+            "group relative overflow-hidden flex flex-col h-full border-white/[0.08] hover:border-arena-cyan/30 transition-all duration-500"
           )}
           onClick={handleCardClick}
           role="article"
           aria-label={`Debate: ${debate.topic}`}
         >
-          <CardHeader className="pb-3">
-            {/* Status Badge */}
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <Badge variant={getStatusVariant(debate.status)} size="sm">
-                <span className="mr-1">{statusInfo.icon}</span>
-                {statusInfo.label}
+          {/* Top Accent Gradient Bar */}
+          <div
+            className={cn(
+              "absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r transition-all duration-500 group-hover:h-[4px]",
+              debate.status === "completed" ? "from-emerald-500 via-arena-cyan to-arena-violet" :
+                debate.status === "in_progress" ? "from-arena-cyan via-arena-violet to-arena-rose" :
+                  "from-gray-500 to-gray-400"
+            )}
+          />
+
+          {/* Background Decoration */}
+          <div className="absolute -right-4 -top-8 w-24 h-24 bg-arena-violet/5 blur-3xl rounded-full group-hover:bg-arena-violet/10 transition-colors duration-500" />
+          <div className="absolute -left-4 -bottom-8 w-24 h-24 bg-arena-cyan/5 blur-3xl rounded-full group-hover:bg-arena-cyan/10 transition-colors duration-500" />
+
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <Badge
+                variant={getStatusVariant(debate.status)}
+                size="sm"
+                className="px-2 py-0.5 bg-white/[0.05] backdrop-blur-md border-white/[0.08]"
+              >
+                <span className="mr-1.5">{statusInfo.icon}</span>
+                <span className="font-medium tracking-wide uppercase text-[10px]">
+                  {statusInfo.label}
+                </span>
               </Badge>
-              
+
               {hasConsensus && (
-                <Badge variant="mediator" size="sm">
-                  <span className="mr-1">⚖️</span>
-                  Consensus
-                </Badge>
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-arena-gold/10 border border-arena-gold/20 text-[10px] animate-pulse-glow" title="Consensus Reached">
+                  ⚖️
+                </div>
               )}
             </div>
 
-            {/* Topic */}
-            <CardTitle className="text-lg line-clamp-2">
+            <CardTitle className="text-xl font-bold leading-snug line-clamp-2 text-white/90 group-hover:text-white transition-colors duration-300">
               {debate.topic}
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="pt-0 pb-3">
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {/* Created Date */}
-              <div className="flex flex-col">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Created
-                </span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {formatRelativeTime(debate.created_at)}
-                </span>
+          <CardContent className="pt-0 pb-6 flex-grow relative z-10">
+            <div className="space-y-4">
+              {/* Metadata Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+                    Timeline
+                  </p>
+                  <div className="flex items-center gap-1.5 text-sm text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-arena-cyan/70">
+                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span>{formatRelativeTime(debate.created_at)}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-right">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+                    Interaction
+                  </p>
+                  <div className="flex items-center justify-end gap-1.5 text-sm text-gray-300">
+                    <span>{debate.total_arguments} Args</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-arena-violet/70">
+                      <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              {/* Arguments Count */}
-              <div className="flex flex-col">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Arguments
-                </span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {debate.total_arguments} {debate.total_arguments === 1 ? "argument" : "arguments"}
-                </span>
-              </div>
-
-              {/* Rounds */}
-              <div className="flex flex-col">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Rounds
-                </span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {debate.total_rounds} {debate.total_rounds === 1 ? "round" : "rounds"}
-                </span>
-              </div>
-
-              {/* Completed Date (if applicable) */}
-              {debate.completed_at && (
-                <div className="flex flex-col">
-                  <span className="text-gray-500 dark:text-gray-400 text-xs">
-                    Completed
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {formatRelativeTime(debate.completed_at)}
-                  </span>
+              {/* Progress Indicator (Subtle) */}
+              {debate.status === "in_progress" && (
+                <div className="w-full h-1 bg-white/[0.05] rounded-full overflow-hidden mt-2">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-arena-cyan to-arena-violet"
+                    initial={{ width: "30%" }}
+                    animate={{ width: "70%" }}
+                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                  />
                 </div>
               )}
             </div>
           </CardContent>
 
-          {/* Action Buttons */}
           {showActions && (
-            <CardFooter className="pt-3 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 w-full">
-                {onView && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleViewClick}
-                    className="flex-1"
-                    aria-label={`View debate: ${debate.topic}`}
+            <CardFooter className="pt-4 border-t border-white/[0.06] bg-white/[0.01] mt-auto relative z-10">
+              <div className="flex items-center gap-3 w-full">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleViewClick}
+                  className="flex-1 bg-white/[0.03] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/[0.05] group/btn transition-all duration-300"
+                >
+                  View Debate
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="ml-2 transition-transform duration-300 group-hover/btn:translate-x-1"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mr-1"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    View Details
-                  </Button>
-                )}
-                
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </Button>
+
                 {onDelete && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleDeleteClick}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950"
+                    className="h-9 w-9 shrink-0 text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
                     aria-label={`Delete debate: ${debate.topic}`}
                   >
                     <svg

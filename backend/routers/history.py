@@ -6,7 +6,7 @@ Handles debate history and analytics endpoints
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, delete
 import logging
@@ -96,7 +96,7 @@ async def get_history(
                 id=debate.id,
                 topic=debate.topic,
                 status=debate.status.value,
-                created_at=debate.created_at.isoformat() if debate.created_at else "",
+                created_at=debate.created_at.replace(tzinfo=timezone.utc).isoformat() if debate.created_at else "",
                 total_arguments=debate.total_arguments
             )
             for debate in debates

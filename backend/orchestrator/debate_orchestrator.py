@@ -5,7 +5,7 @@ This module implements the multi-agent debate workflow using LangGraph's
 StateGraph for managing the debate flow through 3 rounds and consensus generation.
 """
 from typing import AsyncIterator, Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import asyncio
 from langgraph.graph import StateGraph, END
@@ -556,7 +556,7 @@ class DebateOrchestrator:
         try:
             arguments_payload = [dict(arg) for arg in state["arguments"]]
             consensus_payload = dict(state["consensus"]) if state["consensus"] else None
-            completed_at = datetime.utcnow() if state["status"] == "completed" else None
+            completed_at = datetime.now(timezone.utc) if state["status"] == "completed" else None
 
             # Create or update debate record
             result = await db_session.execute(
