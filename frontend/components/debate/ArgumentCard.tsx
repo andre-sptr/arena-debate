@@ -57,7 +57,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
               {/* Agent Info */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-2xl transition-transform duration-200 group-hover:scale-105"
+                  className="flex h-12 w-12 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl text-3xl sm:text-2xl transition-transform duration-200 group-hover:scale-105"
                   style={{
                     backgroundColor: `${agentColor}12`,
                     border: `1px solid ${agentColor}25`,
@@ -70,7 +70,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-white truncate">
+                    <h3 className="font-bold sm:font-semibold text-[17px] sm:text-base text-white truncate">
                       {getAgentDisplayName(argument.agent_name)}
                     </h3>
                     <Badge variant={agentVariant} size="sm">
@@ -91,10 +91,10 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
           <CardContent className="pt-0">
             {/* Argument Content */}
             <div
-              className="pl-4 border-l-2"
+              className="pl-3 sm:pl-4 border-l-2"
               style={{ borderColor: `${agentColor}20` }}
             >
-              <div className="text-sm text-gray-300 leading-relaxed markdown-content">
+              <div className="text-[15px] sm:text-base text-gray-300 leading-relaxed markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {argument.content}
                 </ReactMarkdown>

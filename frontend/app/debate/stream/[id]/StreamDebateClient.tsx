@@ -29,16 +29,6 @@ interface StreamDebateClientProps {
 
 const agents = [
   {
-    name: "devil_1",
-    displayName: "Silas",
-    role: "The Logical Critic",
-  },
-  {
-    name: "devil_2",
-    displayName: "Vance",
-    role: "The Risk Analyst",
-  },
-  {
     name: "optimist_1",
     displayName: "Nova",
     role: "The Visionary Architect",
@@ -47,6 +37,16 @@ const agents = [
     name: "optimist_2",
     displayName: "Forge",
     role: "The Pragmatic Idealist",
+  },
+  {
+    name: "devil_1",
+    displayName: "Silas",
+    role: "The Logical Critic",
+  },
+  {
+    name: "devil_2",
+    displayName: "Vance",
+    role: "The Risk Analyst",
   },
   {
     name: "judge",

@@ -55,7 +55,7 @@ export const DebateProgress = React.forwardRef<HTMLDivElement, DebateProgressPro
             <h3 className="text-sm font-semibold text-gray-200">
               Debate Progress
             </h3>
-            <Badge variant={getStatusVariant(status)} size="sm">
+            <Badge className="hidden sm:inline" variant={getStatusVariant(status)} size="sm">
               {statusLabels[status.toLowerCase()] || status}
             </Badge>
           </div>

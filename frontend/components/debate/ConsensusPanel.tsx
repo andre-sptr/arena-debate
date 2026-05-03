@@ -57,7 +57,7 @@ export const ConsensusPanel = React.forwardRef<HTMLDivElement, ConsensusPanelPro
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-xl gradient-text-gold">
+                    <CardTitle className="text-lg sm:text-xl gradient-text-gold font-bold">
                       Final Consensus
                     </CardTitle>
                     
@@ -128,7 +128,7 @@ export const ConsensusPanel = React.forwardRef<HTMLDivElement, ConsensusPanelPro
                   <CardContent className="pt-0 space-y-4">
                     {/* Consensus Content */}
                     <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-4">
-                      <div className="text-sm text-gray-300 leading-relaxed markdown-content">
+                      <div className="text-[15px] sm:text-base text-gray-300 leading-relaxed markdown-content">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {consensus.content}
                         </ReactMarkdown>
@@ -138,7 +138,7 @@ export const ConsensusPanel = React.forwardRef<HTMLDivElement, ConsensusPanelPro
                     {/* Key Points */}
                     {consensus.key_points.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                        <h4 className="text-base sm:text-sm font-semibold text-gray-200 mb-4 flex items-center gap-2">
                           <span className="text-arena-violet">✦</span>
                           Key Points
                         </h4>
@@ -149,7 +149,7 @@ export const ConsensusPanel = React.forwardRef<HTMLDivElement, ConsensusPanelPro
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.2, delay: index * 0.05 }}
-                              className="flex items-start gap-3 text-sm text-gray-300"
+                              className="flex items-start gap-3 text-[15px] sm:text-sm text-gray-300"
                             >
                               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-arena-violet/10 border border-arena-violet/20 text-[10px] font-bold text-arena-violet mt-0.5">
                                 {index + 1}
