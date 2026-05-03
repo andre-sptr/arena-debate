@@ -54,6 +54,7 @@ class AIService:
     async def generate_argument(
         self,
         agent_name: str,
+        agent_display_name: str,
         agent_role: str,
         system_prompt: str,
         topic: str,
@@ -75,19 +76,27 @@ class AIService:
                    "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
                    "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
         
+        # Team context
+        team_a = "Nova & Forge"
+        team_b = "Silas & Vance"
+        
+        prompt += f"Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
+        
         if context:
-            prompt += f"Context: {context}\n\n"
+            prompt += f"Context for this round: {context}\n\n"
         
         if previous_arguments:
             prompt += "Previous arguments in this debate:\n"
             for arg in previous_arguments:
-                prompt += f"- {arg['agent_role']} ({arg['agent_name']}): {arg['content']}\n"
+                # Try to get display name from arg if available, else fallback
+                name = arg.get('agent_display_name', arg.get('agent_name', 'Unknown'))
+                prompt += f"- {name} ({arg['agent_role']}): {arg['content']}\n"
             prompt += "\n"
         
-        prompt += (f"As {agent_role}, provide your argument. "
-                   "IMPORTANT: Keep your response concise, dense, and on-point. "
-                   "If you have a teammate, cooperate with them and build upon their points. "
-                   "Directly address the opposing team's arguments. "
+        prompt += (f"As {agent_display_name} ({agent_role}), provide your argument. "
+                   "IMPORTANT: Address your teammate and opponents by their NAMES (e.g., 'As Silas pointed out...' or 'Nova mentioned...'). "
+                   "Keep your response concise, dense, and on-point. "
+                   "Cooperate with your teammate and directly challenge your specific opponents. "
                    "Focus on quality over quantity.")
         
         messages.append(HumanMessage(content=prompt))
@@ -236,6 +245,7 @@ DECISION: [YES or NO]"""
     async def stream_argument(
         self,
         agent_name: str,
+        agent_display_name: str,
         agent_role: str,
         system_prompt: str,
         topic: str,

@@ -116,6 +116,7 @@ class DebateOrchestrator:
                 # Generate argument with retry logic
                 content = await self._generate_with_retry(
                     agent_name=agent_name,
+                    agent_display_name=agent_metadata["display_name"],
                     agent_role=agent_metadata["role"],
                     system_prompt=system_prompt,
                     topic=topic,
@@ -126,10 +127,11 @@ class DebateOrchestrator:
                 # Create argument dict
                 argument = ArgumentDict(
                     agent_name=agent_name,
+                    agent_display_name=agent_metadata["display_name"],
                     agent_role=agent_metadata["role"],
                     content=content,
                     round_number=current_round,
-                    timestamp=datetime.utcnow().isoformat(),
+                    timestamp=datetime.now(timezone.utc).isoformat(),
                 )
                 
                 new_arguments.append(argument)
@@ -151,6 +153,7 @@ class DebateOrchestrator:
     async def _generate_with_retry(
         self,
         agent_name: str,
+        agent_display_name: str,
         agent_role: str,
         system_prompt: str,
         topic: str,
@@ -181,6 +184,7 @@ class DebateOrchestrator:
                 content = await asyncio.wait_for(
                     self.ai_service.generate_argument(
                         agent_name=agent_name,
+                        agent_display_name=agent_display_name,
                         agent_role=agent_role,
                         system_prompt=system_prompt,
                         topic=topic,
@@ -194,12 +198,13 @@ class DebateOrchestrator:
                 timeout = f"{self.generation_timeout:g}"
                 message = f"{agent_name} generation timed out after {timeout} seconds"
                 print(f"[Orchestrator] {message}")
-                raise Exception(message)
+                last_error = Exception(message)
             except Exception as e:
+                print(f"[Orchestrator] Error generating argument for {agent_name} (attempt {attempt + 1}): {e}")
                 last_error = e
-                print(f"[Orchestrator] Retry {attempt + 1}/{self.max_retries} for {agent_name}: {e}")
-                if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay)
+            
+            if attempt < self.max_retries - 1:
+                await asyncio.sleep(self.retry_delay)
         
         raise Exception(f"Failed after {self.max_retries} retries: {last_error}")
 
@@ -444,6 +449,7 @@ class DebateOrchestrator:
 
                     content = await self._generate_with_retry(
                         agent_name=agent_name,
+                        agent_display_name=agent_metadata["display_name"],
                         agent_role=agent_metadata["role"],
                         system_prompt=system_prompt,
                         topic=topic,
@@ -453,10 +459,11 @@ class DebateOrchestrator:
 
                     argument = ArgumentDict(
                         agent_name=agent_name,
+                        agent_display_name=agent_metadata["display_name"],
                         agent_role=agent_metadata["role"],
                         content=content,
                         round_number=round_number,
-                        timestamp=datetime.utcnow().isoformat(),
+                        timestamp=datetime.now(timezone.utc).isoformat(),
                     )
                     state["arguments"].append(argument)
                     previous_args.append(argument) # Update local context immediately for the next agent in same round

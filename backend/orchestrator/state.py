@@ -12,6 +12,7 @@ from operator import add
 class ArgumentDict(TypedDict):
     """Structure for a single argument in the debate"""
     agent_name: str
+    agent_display_name: str
     agent_role: str
     content: str
     round_number: int
