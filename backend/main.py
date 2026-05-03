@@ -13,14 +13,13 @@ from routers import debate, history
 from database import init_db
 from config import get_settings
 
-# Configure logger
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle manager for startup and shutdown events"""
-    # Startup
+
     logger.info("🚀 Arena Backend Starting...")
     logger.info("Initializing database...")
     try:
@@ -28,11 +27,9 @@ async def lifespan(app: FastAPI):
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
-        # Continue anyway - tables might already exist
     
     yield
-    
-    # Shutdown
+
     logger.info("👋 Arena Backend Shutting Down...")
 
 
@@ -43,7 +40,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration
 settings = get_settings()
 cors_origins = [
     origin.strip()
@@ -60,7 +56,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(debate.router, prefix="/debate", tags=["debate"])
 app.include_router(history.router, prefix="/history", tags=["history"])
 
@@ -96,5 +91,3 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
-
-# Made with Bob

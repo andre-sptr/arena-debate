@@ -52,5 +52,3 @@ def get_settings() -> Settings:
     Use lru_cache to avoid reading .env file multiple times.
     """
     return Settings()
-
-# Made with Bob

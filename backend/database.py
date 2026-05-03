@@ -13,19 +13,18 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./arena.db")
 
 # Create async engine
-# For SQLite, we use StaticPool to avoid threading issues
 if "sqlite" in DATABASE_URL:
     engine = create_async_engine(
         DATABASE_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
-        echo=False,  # Changed to False to disable SQL query logging
+        echo=False, 
     )
 else:
     # For PostgreSQL or other databases
     engine = create_async_engine(
         DATABASE_URL,
-        echo=False,  # Changed to False to disable SQL query logging
+        echo=False, 
         pool_pre_ping=True,
     )
 
@@ -76,5 +75,3 @@ async def close_db():
     Call this on application shutdown.
     """
     await engine.dispose()
-
-# Made with Bob

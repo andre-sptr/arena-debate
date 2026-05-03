@@ -19,7 +19,6 @@ from .mediator import MediatorAgent
 from typing import Dict, Type
 
 
-# Agent registry for easy access
 AGENTS: Dict[str, Type] = {
     "devils_advocate": DevilsAdvocateAgent,
     "optimist": OptimistAgent,
@@ -91,5 +90,3 @@ __all__ = [
     "get_agent_metadata",
     "get_all_agents_metadata",
 ]
-
-# Made with Bob

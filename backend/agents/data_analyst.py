@@ -20,7 +20,7 @@ class DataAnalystAgent:
     name = "data_analyst"
     display_name = "Data Analyst"
     role = "The Objective Researcher"
-    color = "#3B82F6"  # Blue
+    color = "#3B82F6" 
     emoji = "📊"
     
     # System prompt that defines the agent's personality and debate style
@@ -94,7 +94,7 @@ Remember: Your role is to bring objectivity and evidence to the debate, helping 
             return "This is the opening round. Present the key facts and data relevant to this topic."
         elif round_number == 2:
             return "Analyze the arguments presented. What does the evidence actually support or contradict?"
-        else:  # round 3
+        else: 
             return "Provide your final data-driven assessment. What do the facts conclusively tell us?"
 
 
