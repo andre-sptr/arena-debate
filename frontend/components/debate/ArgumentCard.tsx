@@ -13,7 +13,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader } from "@/components/ui";
 import { Badge, getAgentVariant } from "@/components/ui/badge";
-import { cn, getAgentColor, getAgentEmoji, formatDate } from "@/lib/utils";
+import { cn, getAgentColor, getAgentEmoji, getAgentDisplayName, formatDate } from "@/lib/utils";
 import type { Argument } from "@/types";
 
 /**
@@ -71,7 +71,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-white truncate">
-                      {argument.agent_role}
+                      {getAgentDisplayName(argument.agent_name)}
                     </h3>
                     <Badge variant={agentVariant} size="sm">
                       Round {argument.round_number}

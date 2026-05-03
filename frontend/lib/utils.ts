@@ -131,6 +131,17 @@ const AGENT_EMOJIS: Record<string, string> = {
 };
 
 /**
+ * Agent display name mapping for human-readable labels
+ */
+const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  devil_1: "Silas",
+  devil_2: "Vance",
+  optimist_1: "Nova",
+  optimist_2: "Forge",
+  judge: "Andre",
+};
+
+/**
  * Gets the emoji associated with an agent
  * 
  * @param agentName - Name of the agent
@@ -144,6 +155,22 @@ const AGENT_EMOJIS: Record<string, string> = {
  */
 export function getAgentEmoji(agentName: string): string {
   return AGENT_EMOJIS[agentName.toLowerCase()] || "🤖";
+}
+
+/**
+ * Gets the display name associated with an agent
+ * 
+ * @param agentName - Name of the agent
+ * @returns Display name string
+ * 
+ * @example
+ * ```ts
+ * getAgentDisplayName("devil_1")
+ * // Returns: "Silas"
+ * ```
+ */
+export function getAgentDisplayName(agentName: string): string {
+  return AGENT_DISPLAY_NAMES[agentName.toLowerCase()] || agentName;
 }
 
 /**
