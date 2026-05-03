@@ -84,7 +84,7 @@ export default function HistoryPage() {
           </p>
         </div>
         <Button onClick={() => router.push("/")} variant="outline" size="sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
           Home
         </Button>
       </motion.div>
@@ -114,32 +114,16 @@ export default function HistoryPage() {
             {currentDebates.map((debate, i) => (
               <motion.div
                 key={debate.debate_id}
-                className="relative group"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.05 }}
+                className="h-full"
               >
-                <DebateTopicCard debate={debate} />
-                {/* Delete Button Overlay */}
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDelete(debate.debate_id);
-                    }}
-                    disabled={deletingId === debate.debate_id}
-                    className="h-8 w-8 p-0"
-                  >
-                    {deletingId === debate.debate_id ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                    )}
-                  </Button>
-                </div>
+                <DebateTopicCard
+                  debate={debate}
+                  onView={(id) => router.push(`/debate/${id}`)}
+                  onDelete={handleDelete}
+                />
               </motion.div>
             ))}
           </div>
@@ -228,5 +212,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-
-// Made with Bob

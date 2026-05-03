@@ -166,7 +166,7 @@ export const DebateTopicCard = React.forwardRef<HTMLDivElement, DebateTopicCardP
               )}
             </div>
 
-            <CardTitle className="text-xl font-bold leading-snug line-clamp-2 text-white/90 group-hover:text-white transition-colors duration-300">
+            <CardTitle className="text-xl font-bold leading-snug line-clamp-1 text-white/90 group-hover:text-white transition-colors duration-300">
               {debate.topic}
             </CardTitle>
           </CardHeader>
@@ -278,5 +278,3 @@ export const DebateTopicCard = React.forwardRef<HTMLDivElement, DebateTopicCardP
 DebateTopicCard.displayName = "DebateTopicCard";
 
 export default DebateTopicCard;
-
-// Made with Bob

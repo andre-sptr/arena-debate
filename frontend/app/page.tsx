@@ -245,7 +245,10 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
               >
-                <DebateTopicCard debate={debate} />
+                <DebateTopicCard
+                  debate={debate}
+                  onView={(id) => router.push(`/debate/${id}`)}
+                />
               </motion.div>
             ))}
           </div>
@@ -289,5 +292,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// Made with Bob
