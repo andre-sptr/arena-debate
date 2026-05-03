@@ -14,27 +14,18 @@ import { useDebateList } from "@/hooks/useDebateList";
 
 const agents = [
   {
-    emoji: "📊",
-    name: "Data Analyst",
-    trait: "Facts & Evidence",
-    color: "from-blue-500/20 to-blue-600/5",
-    borderColor: "border-blue-500/20",
-    glowColor: "shadow-[0_0_20px_hsla(217,91%,60%,0.08)]",
-    textColor: "text-blue-400",
-  },
-  {
-    emoji: "😊",
-    name: "Optimist",
-    trait: "Positive Outlook",
+    emoji: "✨",
+    name: "Nova & Forge",
+    trait: "Team A: Vision & Action",
     color: "from-emerald-500/20 to-emerald-600/5",
     borderColor: "border-emerald-500/20",
     glowColor: "shadow-[0_0_20px_hsla(160,84%,39%,0.08)]",
     textColor: "text-emerald-400",
   },
   {
-    emoji: "😈",
-    name: "Devil's Advocate",
-    trait: "Critical Analysis",
+    emoji: "🧠",
+    name: "Silas & Vance",
+    trait: "Team B: Critique & Safety",
     color: "from-red-500/20 to-red-600/5",
     borderColor: "border-red-500/20",
     glowColor: "shadow-[0_0_20px_hsla(0,84%,60%,0.08)]",
@@ -42,8 +33,8 @@ const agents = [
   },
   {
     emoji: "⚖️",
-    name: "Mediator",
-    trait: "Balanced Synthesis",
+    name: "Andre",
+    trait: "The Impartial Judge",
     color: "from-purple-500/20 to-purple-600/5",
     borderColor: "border-purple-500/20",
     glowColor: "shadow-[0_0_20px_hsla(263,70%,50%,0.08)]",
@@ -108,8 +99,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Four specialized AI agents debate any topic through structured rounds,
-            delivering deep analysis and consensus-driven conclusions.
+            Five specialized AI agents 2v2 Team Debate + 1 Judge discuss any topic, delivering deep analysis and consensus-driven conclusions.
           </p>
         </motion.div>
 
@@ -180,7 +170,7 @@ export default function HomePage() {
 
         {/* Agent Showcase */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 relative z-10"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto pt-4 relative z-10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -278,7 +268,7 @@ export default function HomePage() {
                 Explore More Debates
               </h3>
               <p className="text-gray-400">
-                View all your past debates and their conclusions
+                View all past debates and their conclusions
               </p>
               <Link href="/history">
                 <Button variant="primary" size="lg" className="mt-4">

@@ -177,8 +177,7 @@ async def start_debate(
 
 @router.post("/start/stream")
 async def start_debate_stream(
-    request: DebateStartRequest,
-    db: AsyncSession = Depends(get_db)
+    request: DebateStartRequest
 ) -> StreamingResponse:
     """
     Start a new debate session and stream progress events via SSE.
@@ -195,7 +194,6 @@ async def start_debate_stream(
             async for event in orchestrator.run_debate_stream(
                 topic=topic,
                 debate_id=request.debate_id,
-                db_session=db,
             ):
                 yield format_sse_event(event)
         except asyncio.CancelledError:

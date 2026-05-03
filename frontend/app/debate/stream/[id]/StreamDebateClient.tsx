@@ -29,24 +29,29 @@ interface StreamDebateClientProps {
 
 const agents = [
   {
-    name: "devils_advocate",
-    displayName: "Devil's Advocate",
-    role: "Skeptical Challenger",
+    name: "devil_1",
+    displayName: "Silas",
+    role: "The Logical Critic",
   },
   {
-    name: "optimist",
-    displayName: "Optimist",
-    role: "Visionary Enthusiast",
+    name: "devil_2",
+    displayName: "Vance",
+    role: "The Risk Analyst",
   },
   {
-    name: "data_analyst",
-    displayName: "Data Analyst",
-    role: "Objective Researcher",
+    name: "optimist_1",
+    displayName: "Nova",
+    role: "The Visionary Architect",
   },
   {
-    name: "mediator",
-    displayName: "Mediator",
-    role: "Balanced Synthesizer",
+    name: "optimist_2",
+    displayName: "Forge",
+    role: "The Pragmatic Idealist",
+  },
+  {
+    name: "judge",
+    displayName: "Andre",
+    role: "The Consensus Arbiter",
   },
 ];
 
@@ -112,7 +117,7 @@ export default function StreamDebateClient({
 
   const progressRound =
     status === "completed" || status === "synthesizing"
-      ? 3
+      ? currentRound
       : Math.max(currentRound, status === "connecting" ? 0 : 1);
 
   const activeAgentLabel =
@@ -201,14 +206,14 @@ export default function StreamDebateClient({
 
             <DebateProgress
               currentRound={progressRound}
-              totalRounds={3}
+              totalRounds={7}
               status={progressStatus}
             />
 
             <div className="grid grid-cols-3 gap-4 border-t border-white/[0.06] pt-4">
               <div className="text-center">
                 <div className="text-2xl font-bold font-heading text-arena-cyan">
-                  {Math.min(progressRound, 3)}
+                  {progressRound}
                 </div>
                 <div className="mt-0.5 text-xs text-gray-500">Round</div>
               </div>
@@ -220,7 +225,7 @@ export default function StreamDebateClient({
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold font-heading text-arena-rose">
-                  4
+                  5
                 </div>
                 <div className="mt-0.5 text-xs text-gray-500">Agents</div>
               </div>
@@ -230,11 +235,11 @@ export default function StreamDebateClient({
       </motion.section>
 
       <Card variant="glass" className="p-4">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           {agents.map((agent) => (
             <div
               key={agent.name}
-              className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-4"
+              className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-4"
             >
               <AgentAvatar
                 agentName={agent.name}

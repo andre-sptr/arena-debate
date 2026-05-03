@@ -12,18 +12,20 @@ Each agent provides:
 - Metadata for UI representation (color, emoji, role)
 - Context formatting for different debate rounds
 """
-from .devils_advocate import DevilsAdvocateAgent
-from .optimist import OptimistAgent
-from .data_analyst import DataAnalystAgent
-from .mediator import MediatorAgent
+from .devil_1 import Devil1Agent
+from .devil_2 import Devil2Agent
+from .optimist_1 import Optimist1Agent
+from .optimist_2 import Optimist2Agent
+from .judge import JudgeAgent
 from typing import Dict, Type
 
 
 AGENTS: Dict[str, Type] = {
-    "devils_advocate": DevilsAdvocateAgent,
-    "optimist": OptimistAgent,
-    "data_analyst": DataAnalystAgent,
-    "mediator": MediatorAgent,
+    "devil_1": Devil1Agent,
+    "devil_2": Devil2Agent,
+    "optimist_1": Optimist1Agent,
+    "optimist_2": Optimist2Agent,
+    "judge": JudgeAgent,
 }
 
 

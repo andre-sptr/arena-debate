@@ -111,7 +111,7 @@ def is_debate_complete(state: DebateState) -> bool:
     Returns:
         True if debate is complete, False otherwise
     """
-    return state["current_round"] > 3 and state["consensus"] is not None
+    return state["current_round"] > 7 and state["consensus"] is not None
 
 
 def has_error(state: DebateState) -> bool:

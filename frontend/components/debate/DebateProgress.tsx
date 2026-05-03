@@ -59,7 +59,7 @@ export const DebateProgress = React.forwardRef<HTMLDivElement, DebateProgressPro
               {statusLabels[status.toLowerCase()] || status}
             </Badge>
           </div>
-          
+
           {/* Round Counter */}
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium text-gray-300">
@@ -116,7 +116,7 @@ export const DebateProgress = React.forwardRef<HTMLDivElement, DebateProgressPro
                       isPending && "bg-white/[0.1] border border-white/[0.15]"
                     )}
                   />
-                  
+
                   {/* Round Label */}
                   <span
                     className={cn(
@@ -139,7 +139,7 @@ export const DebateProgress = React.forwardRef<HTMLDivElement, DebateProgressPro
           <p className="text-xs text-gray-500">
             {status === "completed" ? (
               <span className="font-medium text-emerald-400">
-                ✓ All rounds completed
+                ✓ Debate completed
               </span>
             ) : status === "in_progress" ? (
               <span>

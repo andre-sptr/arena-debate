@@ -43,7 +43,7 @@ class DebateOrchestrator:
         """Initialize the debate orchestrator with LangGraph workflow"""
         self.ai_service = get_ai_service()
         self.agents = get_all_agents()
-        self.agent_order = ["devils_advocate", "optimist", "data_analyst", "mediator"]
+        self.agent_order = ["optimist_1", "optimist_2", "devil_1", "devil_2"]
         self.max_retries = 3
         self.retry_delay = 1.0  # seconds
         self.generation_timeout = get_settings().ai_request_timeout
@@ -133,6 +133,7 @@ class DebateOrchestrator:
                 )
                 
                 new_arguments.append(argument)
+                previous_args.append(argument) # Update context for next agent in same round
                 
             except Exception as e:
                 print(f"[Orchestrator] Error generating argument from {agent_name}: {e}")
@@ -178,7 +179,7 @@ class DebateOrchestrator:
         for attempt in range(self.max_retries):
             try:
                 content = await asyncio.wait_for(
-                    self._call_generate_argument(
+                    self.ai_service.generate_argument(
                         agent_name=agent_name,
                         agent_role=agent_role,
                         system_prompt=system_prompt,
@@ -202,28 +203,7 @@ class DebateOrchestrator:
         
         raise Exception(f"Failed after {self.max_retries} retries: {last_error}")
 
-    async def _call_generate_argument(
-        self,
-        agent_name: str,
-        agent_role: str,
-        system_prompt: str,
-        topic: str,
-        context: str,
-        previous_arguments: List[ArgumentDict],
-    ) -> str:
-        """Run provider generation off the event loop so timeouts can fire."""
-        return await asyncio.to_thread(
-            lambda: asyncio.run(
-                self.ai_service.generate_argument(
-                    agent_name=agent_name,
-                    agent_role=agent_role,
-                    system_prompt=system_prompt,
-                    topic=topic,
-                    context=context,
-                    previous_arguments=previous_arguments,
-                )
-            )
-        )
+    # Removed _call_generate_argument as it was causing loop issues
     
     async def _advance_round(self, state: DebateState) -> Dict[str, Any]:
         """
@@ -310,7 +290,7 @@ class DebateOrchestrator:
                 # Cast TypedDict to Dict[str, Any] for compatibility
                 all_args_dict = [dict(arg) for arg in all_arguments]
                 consensus_data = await asyncio.wait_for(
-                    self._call_generate_consensus(
+                    self.ai_service.generate_consensus(
                         topic=topic,
                         all_arguments=all_args_dict,
                     ),
@@ -330,20 +310,7 @@ class DebateOrchestrator:
         
         raise Exception(f"Failed after {self.max_retries} retries: {last_error}")
 
-    async def _call_generate_consensus(
-        self,
-        topic: str,
-        all_arguments: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        """Run provider consensus generation off the event loop."""
-        return await asyncio.to_thread(
-            lambda: asyncio.run(
-                self.ai_service.generate_consensus(
-                    topic=topic,
-                    all_arguments=all_arguments,
-                )
-            )
-        )
+    # Removed _call_generate_consensus as it was causing loop issues
     
     async def _handle_error(self, state: DebateState) -> Dict[str, Any]:
         """
@@ -378,7 +345,7 @@ class DebateOrchestrator:
         
         # Check if we've completed all rounds
         current_round = state["current_round"]
-        if current_round > 3:
+        if current_round > 7:
             return "consensus"
         
         # Continue to next round
@@ -425,7 +392,6 @@ class DebateOrchestrator:
         self,
         topic: str,
         debate_id: Optional[str] = None,
-        db_session: Optional[AsyncSession] = None,
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Run a debate and yield progress events as each step completes.
@@ -445,14 +411,15 @@ class DebateOrchestrator:
         state["status"] = "in_progress"
 
         # Save initial state to DB immediately so it shows up in history
-        if db_session is not None:
+        # Create a fresh session for DB storage to avoid connection closure issues
+        async with AsyncSessionLocal() as session:
             try:
-                await self._store_debate_results(state, db_session)
+                await self._store_debate_results(state, session)
             except Exception as e:
                 print(f"[Orchestrator] Error storing initial debate state: {e}")
 
         try:
-            for round_number in range(1, 4):
+            for round_number in range(1, 8):
                 state["current_round"] = round_number
                 state["status"] = "in_progress"
                 previous_args = get_previous_arguments(state)
@@ -462,6 +429,7 @@ class DebateOrchestrator:
                     "round": round_number,
                 }
 
+                # Team turn logic
                 for agent_name in self.agent_order:
                     yield {
                         "type": "agent_start",
@@ -491,6 +459,7 @@ class DebateOrchestrator:
                         timestamp=datetime.utcnow().isoformat(),
                     )
                     state["arguments"].append(argument)
+                    previous_args.append(argument) # Update local context immediately for the next agent in same round
 
                     yield {
                         "type": "argument",
@@ -502,6 +471,24 @@ class DebateOrchestrator:
                     "round": round_number,
                 }
 
+                # Judge Consensus Check after each round
+                yield {
+                    "type": "agent_start",
+                    "agent_name": "judge",
+                    "round": round_number,
+                }
+                
+                print(f"[Orchestrator] Round {round_number} complete. Checking consensus...")
+                is_consensus = await self.ai_service.check_consensus(topic, state["arguments"], round_number)
+                
+                if is_consensus:
+                    print(f"[Orchestrator] Consensus reached in Round {round_number}!")
+                    break
+                elif round_number == 7:
+                    print(f"[Orchestrator] Max rounds (7) reached. Finalizing.")
+                    break
+
+            # Final Consensus Generation
             all_args_dict = [dict(arg) for arg in state["arguments"]]
             consensus_data = await self._generate_consensus_with_retry(topic, all_args_dict)
             consensus = ConsensusDict(
@@ -510,12 +497,13 @@ class DebateOrchestrator:
                 usage_metadata=consensus_data.get("usage_metadata"),
             )
 
-            state["current_round"] = 4
+            state["current_round"] = round_number
             state["consensus"] = consensus
             state["status"] = "completed"
 
-            if db_session is not None:
-                await self._store_debate_results(state, db_session)
+            # Use a fresh session for final storage
+            async with AsyncSessionLocal() as session:
+                await self._store_debate_results(state, session)
 
             yield {
                 "type": "consensus",
@@ -553,51 +541,57 @@ class DebateOrchestrator:
         """
         debate_id = state["debate_id"]
         
-        try:
-            arguments_payload = [dict(arg) for arg in state["arguments"]]
-            consensus_payload = dict(state["consensus"]) if state["consensus"] else None
-            completed_at = datetime.now(timezone.utc) if state["status"] == "completed" else None
+        arguments_payload = [dict(arg) for arg in state["arguments"]]
+        consensus_payload = dict(state["consensus"]) if state["consensus"] else None
+        completed_at = datetime.now(timezone.utc) if state["status"] == "completed" else None
 
-            # Create or update debate record
-            result = await db_session.execute(
-                select(Debate).where(Debate.id == debate_id)
-            )
-            debate = result.scalar_one_or_none()
-
-            if debate is None:
-                debate = Debate(id=debate_id)
-                db_session.add(debate)
-
-            debate.topic = state["topic"]
-            debate.status = DebateStatus(state["status"])
-            debate.arguments = arguments_payload
-            debate.consensus = consensus_payload
-            debate.total_rounds = 3
-            debate.total_arguments = len(arguments_payload)
-            debate.completed_at = completed_at
-
-            await db_session.execute(
-                delete(Argument).where(Argument.debate_id == debate_id)
-            )
-
-            # Store individual arguments
-            for arg in state["arguments"]:
-                argument = Argument(
-                    id=str(uuid.uuid4()),
-                    debate_id=debate_id,
-                    agent_name=arg["agent_name"],
-                    agent_role=arg["agent_role"],
-                    content=arg["content"],
-                    round_number=arg["round_number"],
+        for attempt in range(3):
+            try:
+                # Create or update debate record
+                result = await db_session.execute(
+                    select(Debate).where(Debate.id == debate_id)
                 )
-                db_session.add(argument)
-            
-            await db_session.commit()
-            
-        except Exception as e:
-            print(f"[Orchestrator] Error storing debate results: {e}")
-            await db_session.rollback()
-            raise
+                debate = result.scalar_one_or_none()
+
+                if debate is None:
+                    debate = Debate(id=debate_id)
+                    db_session.add(debate)
+
+                debate.topic = state["topic"]
+                debate.status = DebateStatus(state["status"])
+                debate.arguments = arguments_payload
+                debate.consensus = consensus_payload
+                debate.total_rounds = state["current_round"] - 1
+                debate.total_arguments = len(arguments_payload)
+                debate.completed_at = completed_at
+
+                await db_session.execute(
+                    delete(Argument).where(Argument.debate_id == debate_id)
+                )
+
+                # Store individual arguments
+                for arg in state["arguments"]:
+                    argument = Argument(
+                        id=str(uuid.uuid4()),
+                        debate_id=debate_id,
+                        agent_name=arg["agent_name"],
+                        agent_role=arg["agent_role"],
+                        content=arg["content"],
+                        round_number=arg["round_number"],
+                    )
+                    db_session.add(argument)
+                
+                await db_session.commit()
+                return  # Success!
+                
+            except Exception as e:
+                await db_session.rollback()
+                if "locked" in str(e).lower() and attempt < 2:
+                    print(f"[Orchestrator] Database locked, retrying {attempt + 1}/3...")
+                    await asyncio.sleep(0.5)
+                else:
+                    print(f"[Orchestrator] Error storing debate results: {e}")
+                    raise
     
     async def run_debate_with_db(self, topic: str) -> DebateState:
         """

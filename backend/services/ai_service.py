@@ -62,17 +62,6 @@ class AIService:
     ) -> str:
         """
         Generate an argument from an AI agent.
-        
-        Args:
-            agent_name: Name of the agent (e.g., "devils_advocate")
-            agent_role: Role description of the agent
-            system_prompt: System prompt defining agent's persona
-            topic: The debate topic
-            context: Additional context for the argument
-            previous_arguments: List of previous arguments in the debate
-            
-        Returns:
-            Generated argument text
         """
         messages: List[BaseMessage] = [
             SystemMessage(content=system_prompt),
@@ -90,19 +79,73 @@ class AIService:
             prompt += f"Context: {context}\n\n"
         
         if previous_arguments:
-            prompt += "Previous arguments:\n"
+            prompt += "Previous arguments in this debate:\n"
             for arg in previous_arguments:
-                prompt += f"- {arg['agent_name']}: {arg['content']}\n"
+                prompt += f"- {arg['agent_role']} ({arg['agent_name']}): {arg['content']}\n"
             prompt += "\n"
         
-        prompt += f"As {agent_role}, provide your argument comprehensively on this topic. You have full freedom to express your thoughts. IMPORTANT: Format your response using neat Markdown (use bolding, italics, bullet points, headers if necessary to structure your arguments well)."
+        prompt += (f"As {agent_role}, provide your argument. "
+                   "IMPORTANT: Keep your response concise, dense, and on-point. "
+                   "If you have a teammate, cooperate with them and build upon their points. "
+                   "Directly address the opposing team's arguments. "
+                   "Focus on quality over quantity.")
         
         messages.append(HumanMessage(content=prompt))
         
         # Generate response
         response = await self.default_model.ainvoke(messages)
-        # Handle response.content which can be str or list
         return _extract_text(response.content)
+
+    async def check_consensus(
+        self,
+        topic: str,
+        all_arguments: List[Dict[str, Any]],
+        round_number: int
+    ) -> bool:
+        """
+        Ask the Judge to decide if consensus has been reached.
+        
+        Returns:
+            True if consensus reached, False otherwise.
+        """
+        system_prompt = """You are Andre, the Judge. Your task is to evaluate if a 2v2 debate (Team A Optimists vs Team B Devils) has reached a TRUE consensus or if it has become genuinely redundant.
+
+Evaluation Process:
+1. Briefly analyze if both teams have addressed each other's core arguments.
+2. Check if any SIGNIFICANT new points were introduced in the latest round.
+3. Determine if the debate is starting to go in circles.
+
+Decision Guidelines:
+- Round 1-2: Almost NEVER end unless the topic is trivial.
+- Round 3-4: End if the core conflict has been thoroughly explored and both sides are repeating themselves.
+- Round 5-6: End if no new ground is being broken. We want to avoid fatigue.
+
+Format your response as follows:
+ANALYSIS: [1-2 sentences of your reasoning]
+DECISION: [YES or NO]"""
+        
+        prompt = f"Topic: {topic}\nRound: {round_number}\n\nArguments so far:\n"
+        for arg in all_arguments:
+            prompt += f"- {arg['agent_role']}: {arg['content']}\n"
+        
+        prompt += f"\nWe are currently at the end of Round {round_number}. Provide your analysis and then your DECISION (YES or NO)."
+        
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=prompt)
+        ]
+        
+        response = await self.consensus_model.ainvoke(messages)
+        content = _extract_text(response.content).strip().upper()
+        
+        # Look for DECISION: YES or DECISION: NO
+        if "DECISION: YES" in content:
+            return True
+        elif "DECISION: NO" in content:
+            return False
+            
+        # Fallback to simple YES/NO if format is not strictly followed
+        return "YES" in content and "NO" not in content.split("YES")[-1]
     
     async def generate_consensus(
         self,
@@ -224,12 +267,16 @@ class AIService:
             prompt += f"Context: {context}\n\n"
         
         if previous_arguments:
-            prompt += "Previous arguments:\n"
+            prompt += "Previous arguments in this debate:\n"
             for arg in previous_arguments:
-                prompt += f"- {arg['agent_name']}: {arg['content']}\n"
+                prompt += f"- {arg['agent_role']} ({arg['agent_name']}): {arg['content']}\n"
             prompt += "\n"
         
-        prompt += f"As {agent_role}, provide your argument comprehensively on this topic. You have full freedom to express your thoughts. IMPORTANT: Format your response using neat Markdown (use bolding, italics, bullet points, headers if necessary to structure your arguments well)."
+        prompt += (f"As {agent_role}, provide your argument. "
+                   "IMPORTANT: Keep your response concise, dense, and on-point. "
+                   "If you have a teammate, cooperate with them and build upon their points. "
+                   "Directly address the opposing team's arguments. "
+                   "Focus on quality over quantity.")
         
         messages.append(HumanMessage(content=prompt))
         

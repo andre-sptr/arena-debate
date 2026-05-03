@@ -96,10 +96,11 @@ export function formatRelativeTime(isoDate: string): string {
  * Agent color mapping for consistent UI styling
  */
 const AGENT_COLORS: Record<string, string> = {
-  devils_advocate: "#ef4444", // red-500
-  optimist: "#10b981", // green-500
-  data_analyst: "#3b82f6", // blue-500
-  mediator: "#8b5cf6", // purple-500
+  devil_1: "#ef4444", // red-500
+  devil_2: "#b91c1c", // red-700
+  optimist_1: "#10b981", // green-500
+  optimist_2: "#059669", // green-600
+  judge: "#8b5cf6", // purple-500
 };
 
 /**
@@ -122,10 +123,11 @@ export function getAgentColor(agentName: string): string {
  * Agent emoji mapping for visual identification
  */
 const AGENT_EMOJIS: Record<string, string> = {
-  devils_advocate: "😈",
-  optimist: "😊",
-  data_analyst: "📊",
-  mediator: "⚖️",
+  devil_1: "🧠",
+  devil_2: "🛡️",
+  optimist_1: "✨",
+  optimist_2: "🚀",
+  judge: "⚖️",
 };
 
 /**

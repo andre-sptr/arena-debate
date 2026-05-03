@@ -136,7 +136,7 @@ export default function DebateDetailPage({ params }: DebateDetailPageProps) {
             {/* Progress Bar */}
             <DebateProgress
               currentRound={debate.total_rounds}
-              totalRounds={3}
+              totalRounds={7}
               status={debate.status as DebateStatus}
             />
 
@@ -145,7 +145,7 @@ export default function DebateDetailPage({ params }: DebateDetailPageProps) {
               {[
                 { value: debate.total_rounds, label: "Rounds", color: "text-arena-cyan" },
                 { value: debate.total_arguments, label: "Arguments", color: "text-arena-violet" },
-                { value: 4, label: "Agents", color: "text-arena-rose" },
+                { value: 5, label: "Agents", color: "text-arena-rose" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className={`text-2xl font-bold font-heading ${stat.color}`}>
