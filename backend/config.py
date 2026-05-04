@@ -1,7 +1,7 @@
 """
 Configuration management for Arena backend
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -38,10 +38,11 @@ class Settings(BaseSettings):
     cache_ttl: int = 3600
     cache_max_size: int = 1000
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        case_sensitive=False, 
+        extra="ignore"
+    )
 
 
 @lru_cache()
