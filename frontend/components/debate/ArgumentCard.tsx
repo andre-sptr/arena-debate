@@ -9,7 +9,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Brain, CheckCircle2, ChevronDown, Radio } from "lucide-react";
+import { Brain, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader } from "@/components/ui";
@@ -123,7 +123,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                     </span>
                     {argument.thinking_active && (
                       <Badge variant="primary" size="sm">
-                        Thinking
+                        Berfikir
                       </Badge>
                     )}
                   </span>
@@ -144,13 +144,16 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                         stepIndex === (argument.thinking_steps?.length ?? 0) - 1;
 
                       return (
-                        <div
+                        <motion.div
                           key={`${step.agent_name}-${step.round}-${step.phase}-${stepIndex}`}
                           className="flex items-start gap-2"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.18 }}
                         >
                           {isLatest ? (
-                            <Radio
-                              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                            <Loader2
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin"
                               style={{ color: agentColor }}
                               aria-hidden="true"
                             />
@@ -168,7 +171,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                               {step.message}
                             </p>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
