@@ -26,6 +26,12 @@ export interface ArgumentCardProps {
   className?: string;
 }
 
+function formatThinkingPhase(phase: string): string {
+  return phase
+    .replace("_", " ")
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
 /**
  * ArgumentCard component
  */
@@ -156,7 +162,7 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
                           )}
                           <div className="min-w-0">
                             <p className="text-xs font-medium capitalize text-gray-300">
-                              {step.phase}
+                              {formatThinkingPhase(step.phase)}
                             </p>
                             <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
                               {step.message}

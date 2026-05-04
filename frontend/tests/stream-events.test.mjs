@@ -103,6 +103,8 @@ test("ArgumentCard includes collapsible per-argument thinking UI", () => {
   assert.match(source, /Thinking process/);
   assert.match(source, /ChevronDown/);
   assert.match(source, /thinkingOpen/);
+  assert.match(source, /formatThinkingPhase/);
+  assert.match(source, /replace\("_", " "\)/);
 });
 
 test("StreamDebateClient allows React Strict Mode remounts to restart the stream", () => {

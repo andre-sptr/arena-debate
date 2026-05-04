@@ -84,6 +84,36 @@ class BlockingAIService:
         }
 
 
+class ControlledAIService:
+    def __init__(self):
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def generate_argument(
+        self,
+        agent_name,
+        agent_display_name,
+        agent_role,
+        system_prompt,
+        topic,
+        context="",
+        previous_arguments=None,
+    ):
+        self.started.set()
+        await self.release.wait()
+        return f"{agent_name} controlled argument"
+
+    async def generate_consensus(self, topic, all_arguments):
+        return {
+            "content": f"Consensus for {topic}",
+            "key_points": ["Controlled point"],
+            "usage_metadata": None,
+        }
+
+    async def check_consensus(self, topic, all_arguments, round_number):
+        return True
+
+
 def make_orchestrator(ai_service=None):
     orchestrator = DebateOrchestrator.__new__(DebateOrchestrator)
     orchestrator.ai_service = ai_service or FakeAIService()
@@ -96,6 +126,7 @@ def make_orchestrator(ai_service=None):
     orchestrator.max_retries = 1
     orchestrator.retry_delay = 0
     orchestrator.generation_timeout = 30
+    orchestrator.thinking_event_delay = 0
     return orchestrator
 
 
@@ -122,6 +153,46 @@ def make_completed_state(debate_id, topic, argument_contents):
         "status": "completed",
         "error": None,
     }
+
+
+def test_thinking_steps_use_safe_streaming_status_language():
+    orchestrator = make_orchestrator()
+
+    pro_steps = orchestrator._get_thinking_steps("optimist_1", 1)
+    kontra_steps = orchestrator._get_thinking_steps("devil_1", 1)
+
+    assert pro_steps[0]["phase"] == "memahami_topik"
+    assert "Memahami topik" in pro_steps[0]["message"]
+    assert "Menyusun jawaban pro" in pro_steps[-1]["message"]
+    assert kontra_steps[0]["phase"] == "memahami_topik"
+    assert "Menguji klaim pro" in " ".join(
+        step["message"] for step in kontra_steps
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_debate_stream_starts_model_generation_while_streaming_thinking():
+    ai_service = ControlledAIService()
+    orchestrator = make_orchestrator(ai_service)
+    orchestrator._store_debate_results = _noop_store_debate_results
+
+    stream = orchestrator.run_debate_stream(
+        topic="Should schools use AI tutors?",
+        debate_id="debate-streaming-thinking",
+    )
+
+    events = [await anext(stream) for _ in range(3)]
+
+    assert [event["type"] for event in events] == [
+        "round_start",
+        "agent_start",
+        "thinking",
+    ]
+    assert ai_service.started.is_set()
+    assert events[-1]["message"].startswith("Memahami topik")
+
+    ai_service.release.set()
+    await stream.aclose()
 
 
 @pytest.mark.asyncio
@@ -305,9 +376,9 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     judge_text = " ".join(event["message"] for event in judge_thinking_events).lower()
     assert "pro" in judge_text
     assert "kontra" in judge_text
-    assert "evidence quality" in judge_text
-    assert "clash" in judge_text
-    assert "consensus" in judge_text
+    assert "kualitas bukti" in judge_text
+    assert "benturan klaim" in judge_text
+    assert "konsensus" in judge_text
 
     assert len(stored) == 2
     assert stored[-1]["state"]["status"] == "completed"

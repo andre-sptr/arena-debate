@@ -6,6 +6,7 @@ StateGraph for managing the debate flow through 3 rounds and consensus generatio
 """
 from typing import AsyncIterator, Dict, Any, List, Optional
 from datetime import datetime, timezone
+from contextlib import suppress
 import uuid
 import asyncio
 from langgraph.graph import StateGraph, END
@@ -46,6 +47,7 @@ class DebateOrchestrator:
         self.max_retries = 3
         self.retry_delay = 1.0  # seconds
         self.generation_timeout = get_settings().ai_request_timeout
+        self.thinking_event_delay = 0.45
         
         # Build the LangGraph workflow
         self.workflow = self._build_workflow()
@@ -58,27 +60,27 @@ class DebateOrchestrator:
         """Return safe deterministic thinking-status events for the UI."""
         if agent_name == "judge":
             steps = [
-                ("clash", "Evaluating the main clash between the pro and kontra sides."),
-                ("evidence", "Checking evidence quality and which claims are best supported."),
-                ("consensus", "Assessing whether pro-kontra consensus readiness is justified."),
+                ("memahami_topik", "Memahami posisi pro dan kontra yang sudah muncul."),
+                ("menimbang_argumen", "Menimbang kualitas bukti, benturan klaim, dan risiko bias."),
+                ("menyusun_jawaban", "Menyusun penilaian ringkas tentang kesiapan konsensus pro-kontra."),
             ]
         elif agent_name in {"optimist_1", "optimist_2"} and round_number == 1:
             steps = [
-                ("framing", "Framing the pro case clearly around the topic."),
-                ("evidence", "Grounding the pro claim in a relevant precedent or practical pattern."),
-                ("drafting", "Preparing a concise pro opening argument."),
+                ("memahami_topik", "Memahami topik dan batas posisi pro."),
+                ("menimbang_argumen", "Menimbang manfaat, bukti, dan contoh yang mendukung sisi pro."),
+                ("menyusun_jawaban", "Menyusun jawaban pro yang ringkas dan langsung ke inti."),
             ]
         elif agent_name in {"optimist_1", "optimist_2"}:
             steps = [
-                ("review", "Reviewing the strongest kontra objection from the previous turn."),
-                ("evidence", "Checking which pro example or evidence best supports the response."),
-                ("drafting", "Shaping a concise pro rebuttal and impact."),
+                ("memahami_topik", "Membaca ulang keberatan kontra terbaru terhadap topik."),
+                ("menimbang_argumen", "Menimbang contoh pro yang paling kuat untuk menjawab kontra."),
+                ("menyusun_jawaban", "Menyusun jawaban pro sebagai bantahan yang jelas."),
             ]
         else:
             steps = [
-                ("assumptions", "Inspecting the pro side's assumptions and burden of proof."),
-                ("risk", "Checking kontra risks, historical failures, and real-world constraints."),
-                ("rebuttal", "Preparing a concise kontra rebuttal with clear impact."),
+                ("memahami_topik", "Memahami topik dan klaim utama dari sisi pro."),
+                ("menimbang_argumen", "Menguji klaim pro dengan risiko, batasan, dan konsekuensi kontra."),
+                ("menyusun_jawaban", "Menyusun jawaban kontra yang ringkas dan berdampak."),
             ]
 
         return [
@@ -482,15 +484,13 @@ class DebateOrchestrator:
                         "agent_name": agent_name,
                         "round": round_number,
                     }
-                    for thinking_event in self._get_thinking_steps(agent_name, round_number):
-                        yield thinking_event
 
                     agent_class = get_agent(agent_name)
                     agent_metadata = agent_class.get_metadata()
                     system_prompt = agent_class.get_system_prompt()
                     context = agent_class.format_context(round_number, previous_args)
 
-                    content = await self._generate_with_retry(
+                    generation_task = asyncio.create_task(self._generate_with_retry(
                         agent_name=agent_name,
                         agent_display_name=agent_metadata["display_name"],
                         agent_role=agent_metadata["role"],
@@ -498,7 +498,21 @@ class DebateOrchestrator:
                         topic=topic,
                         context=context,
                         previous_arguments=previous_args,
-                    )
+                    ))
+                    await asyncio.sleep(0)
+
+                    try:
+                        for thinking_event in self._get_thinking_steps(agent_name, round_number):
+                            yield thinking_event
+                            if self.thinking_event_delay > 0:
+                                await asyncio.sleep(self.thinking_event_delay)
+
+                        content = await generation_task
+                    finally:
+                        if not generation_task.done():
+                            generation_task.cancel()
+                            with suppress(asyncio.CancelledError):
+                                await generation_task
 
                     argument = ArgumentDict(
                         agent_name=agent_name,
