@@ -66,36 +66,38 @@ class AIService:
         previous_arguments = previous_arguments or []
         is_team_a_opening = agent_name in {"optimist_1", "optimist_2"} and not previous_arguments
 
-        prompt = f"Topic: {topic}\n\n"
+        prompt = f"Debate Topic (the claim to debate): {topic}\n\n"
         prompt += (
             "CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
             "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
             "If the topic is in English, respond in English. Match the topic's language exactly.\n\n"
         )
         prompt += (
-            "Debate participants:\n"
-            "- Team A (Optimists): Nova, Forge\n"
-            "- Team B (Devils): Silas, Vance\n"
-            "- Judge: Andre\n\n"
+            "Debate Format: PRO vs CONTRA\n"
+            "- Team A (PRO): Nova and Forge defend and support the topic's claim\n"
+            "- Team B (CONTRA): Silas and Vance challenge and oppose the topic's claim\n"
+            "- Judge: Andre evaluates both sides\n\n"
         )
         prompt += (
-            "Natural structured debate rules:\n"
-            "- Write 2-4 concise sentences.\n"
-            "- Keep a clear flow: claim, reason or evidence, and impact.\n"
-            "- Use historical precedent, real-world cases, or known data when relevant.\n"
-            "- Do not invent statistics; if exact data is uncertain, use cautious qualitative evidence or historical precedent.\n"
-            "- Keep the language natural, direct, and easy to read, like a strong human debate speaker.\n\n"
+            "Debate rules:\n"
+            "- FOCUS ON THE TOPIC ITSELF: Is the claim true or false? Valid or invalid?\n"
+            "- Team A (PRO) must present evidence, reasoning, and examples that the topic IS TRUE/VALID\n"
+            "- Team B (CONTRA) must present evidence, reasoning, and examples that the topic IS FALSE/INVALID or present the opposite position\n"
+            "- Write 2-4 concise sentences with clear claim, reasoning, and evidence\n"
+            "- Use historical precedent, real-world cases, or known facts when relevant\n"
+            "- Do not invent statistics; use cautious qualitative evidence if exact data is uncertain\n"
+            "- Stay focused on debating the VALIDITY OF THE TOPIC, not side issues\n\n"
         )
 
         if is_team_a_opening:
             prompt += (
-                "Opening constraint for Team A: Do not name or directly address Team B, Silas, or Vance in this opening. "
-                "Instead, build Team A's affirmative case first with a confident positive claim, grounded reason or evidence, and clear impact.\n\n"
+                "Opening constraint for Team A (PRO): Do not name Team B in your opening. "
+                "Simply present your strongest case for WHY THE TOPIC IS TRUE with clear evidence and reasoning.\n\n"
             )
         else:
             prompt += (
-                "Clash guidance: You may directly reference Silas, Vance, Nova, or Forge when it strengthens clash. "
-                "Answer the strongest opposing point instead of attacking a weak version of it.\n\n"
+                "Debate guidance: Directly address the core arguments about the topic's validity. "
+                "Answer the strongest version of the opposing position.\n\n"
             )
 
         if context:
@@ -109,8 +111,8 @@ class AIService:
             prompt += "\n"
 
         prompt += (
-            f"As {agent_display_name} ({agent_role}), provide your argument. "
-            "Cooperate with your teammate, preserve your persona, and focus on quality over quantity."
+            f"As {agent_display_name} ({agent_role}), provide your argument about the topic's validity. "
+            "Stay focused on whether the topic's claim is true or false."
         )
         return prompt
     
@@ -158,23 +160,23 @@ class AIService:
         Returns:
             True if consensus reached, False otherwise.
         """
-        system_prompt = """You are Andre, the Judge. Your task is to evaluate if a 2v2 debate (Team A Optimists vs Team B Devils) has reached a TRUE consensus or if it has become genuinely redundant.
+        system_prompt = """You are Andre, the Judge. Your task is to evaluate if a PRO vs CONTRA debate has reached a TRUE consensus or if it has become genuinely redundant.
 
 Evaluation Process:
-1. Briefly analyze if both teams have addressed each other's core arguments.
-2. Check if any SIGNIFICANT new points were introduced in the latest round.
+1. Briefly analyze if both teams have addressed the core question: Is the topic's claim true/valid?
+2. Check if any SIGNIFICANT new evidence or reasoning was introduced in the latest round.
 3. Determine if the debate is starting to go in circles.
 
 Decision Guidelines:
 - Round 1-2: Almost NEVER end unless the topic is trivial.
-- Round 3-4: End if the core conflict has been thoroughly explored and both sides are repeating themselves.
+- Round 3-4: End if the core validity question has been thoroughly explored and both sides are repeating themselves.
 - Round 5-6: End if no new ground is being broken. We want to avoid fatigue.
 
 Format your response as follows:
 ANALYSIS: [1-2 sentences of your reasoning]
 DECISION: [YES or NO]"""
         
-        prompt = f"Topic: {topic}\nRound: {round_number}\n\nArguments so far:\n"
+        prompt = f"Debate Topic: {topic}\nRound: {round_number}\n\nArguments so far:\n"
         for arg in all_arguments:
             prompt += f"- {arg['agent_role']}: {arg['content']}\n"
         
@@ -213,31 +215,37 @@ DECISION: [YES or NO]"""
             Dictionary with consensus content and key points
         """
         system_prompt = """You are The Mediator, a balanced and diplomatic AI that synthesizes 
-        different perspectives into a comprehensive consensus. Your role is to:
-        1. Acknowledge all viewpoints fairly
-        2. Identify common ground and key insights
-        3. Present a balanced conclusion
-        4. Highlight actionable takeaways"""
+        PRO and CONTRA perspectives into a fair consensus. Your role is to:
+        1. Acknowledge both the PRO arguments (supporting the topic) and CONTRA arguments (opposing the topic)
+        2. Identify what evidence and reasoning each side presented
+        3. Present a balanced conclusion about the topic's validity
+        4. Highlight key insights from both perspectives"""
         
         # Build prompt with all arguments
-        prompt = f"Topic: {topic}\n\n"
+        prompt = f"Debate Topic: {topic}\n\n"
         
         # Auto-language instruction
         prompt += ("CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
                    "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
                    "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
         
-        prompt += "Arguments from all participants:\n\n"
-        
+        prompt += "Arguments from PRO side (supporting the topic):\n"
         for arg in all_arguments:
-            prompt += f"{arg['agent_role']}:\n{arg['content']}\n\n"
+            if arg['agent_name'] in ['optimist_1', 'optimist_2']:
+                prompt += f"{arg['agent_role']}: {arg['content']}\n"
         
-        prompt += """Based on these diverse perspectives, provide:
-        1. A balanced consensus (3-4 sentences)
-        2. 3-5 key points that emerged from the debate
+        prompt += "\nArguments from CONTRA side (opposing the topic):\n"
+        for arg in all_arguments:
+            if arg['agent_name'] in ['devil_1', 'devil_2']:
+                prompt += f"{arg['agent_role']}: {arg['content']}\n"
+        
+        prompt += """
+Based on these PRO and CONTRA perspectives, provide:
+        1. A balanced consensus that acknowledges both sides' strongest points (3-4 sentences)
+        2. 3-5 key insights that emerged from the debate
         
         Format your response as:
-        CONSENSUS: [your consensus here]
+        CONSENSUS: [your balanced synthesis here]
         
         KEY POINTS:
         - [point 1]
@@ -335,5 +343,3 @@ def get_ai_service() -> AIService:
     if _ai_service is None:
         _ai_service = AIService()
     return _ai_service
-
-# Made with Bob
