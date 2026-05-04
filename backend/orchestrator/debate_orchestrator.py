@@ -49,6 +49,48 @@ class DebateOrchestrator:
         
         # Build the LangGraph workflow
         self.workflow = self._build_workflow()
+
+    def _get_thinking_steps(
+        self,
+        agent_name: str,
+        round_number: int,
+    ) -> List[Dict[str, Any]]:
+        """Return safe deterministic thinking-status events for the UI."""
+        if agent_name == "judge":
+            steps = [
+                ("clash", "Evaluating the main clash between both teams."),
+                ("evidence", "Checking evidence quality and which claims are best supported."),
+                ("consensus", "Assessing whether consensus readiness is justified."),
+            ]
+        elif agent_name in {"optimist_1", "optimist_2"} and round_number == 1:
+            steps = [
+                ("framing", "Framing Team A's affirmative case."),
+                ("evidence", "Grounding the claim in a relevant precedent or practical pattern."),
+                ("drafting", "Preparing a concise opening argument."),
+            ]
+        elif agent_name in {"optimist_1", "optimist_2"}:
+            steps = [
+                ("review", "Reviewing the strongest objection from the previous turn."),
+                ("evidence", "Checking which example or evidence best supports the response."),
+                ("drafting", "Shaping a concise rebuttal and impact."),
+            ]
+        else:
+            steps = [
+                ("assumptions", "Inspecting assumptions and burden of proof."),
+                ("risk", "Checking historical risk, tradeoffs, and real-world constraints."),
+                ("rebuttal", "Preparing a concise rebuttal with clear impact."),
+            ]
+
+        return [
+            {
+                "type": "thinking",
+                "agent_name": agent_name,
+                "round": round_number,
+                "phase": phase,
+                "message": message,
+            }
+            for phase, message in steps
+        ]
     
     def _build_workflow(self) -> StateGraph:
         """
@@ -440,6 +482,8 @@ class DebateOrchestrator:
                         "agent_name": agent_name,
                         "round": round_number,
                     }
+                    for thinking_event in self._get_thinking_steps(agent_name, round_number):
+                        yield thinking_event
 
                     agent_class = get_agent(agent_name)
                     agent_metadata = agent_class.get_metadata()
@@ -483,6 +527,8 @@ class DebateOrchestrator:
                     "agent_name": "judge",
                     "round": round_number,
                 }
+                for thinking_event in self._get_thinking_steps("judge", round_number):
+                    yield thinking_event
                 
                 print(f"[Orchestrator] Round {round_number} complete. Checking consensus...")
                 is_consensus = await self.ai_service.check_consensus(topic, state["arguments"], round_number)

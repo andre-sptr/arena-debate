@@ -145,43 +145,88 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     assert [event["type"] for event in events] == [
         "round_start",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "round_end",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "round_start",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "round_end",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "round_start",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "argument",
         "round_end",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "consensus",
         "complete",
     ]
     assert events[0]["round"] == 1
-    assert events[11]["round"] == 2
-    assert events[22]["round"] == 3
+    assert events[26]["round"] == 2
+    assert events[52]["round"] == 3
     assert events[-1]["debate_id"] == "debate-1"
 
     argument_events = [event for event in events if event["type"] == "argument"]
@@ -207,6 +252,39 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     consensus_event = events[-2]
     assert consensus_event["data"]["content"] == "Consensus for Should cities ban cars?"
     assert consensus_event["data"]["key_points"] == ["First point", "Second point"]
+
+    first_agent_index = next(
+        index
+        for index, event in enumerate(events)
+        if event == {"type": "agent_start", "agent_name": "optimist_1", "round": 1}
+    )
+    first_argument_index = next(
+        index
+        for index, event in enumerate(events)
+        if event["type"] == "argument" and event["data"]["agent_name"] == "optimist_1"
+    )
+    first_thinking_events = events[first_agent_index + 1:first_argument_index]
+    assert [event["type"] for event in first_thinking_events] == [
+        "thinking",
+        "thinking",
+        "thinking",
+    ]
+    assert all(event["agent_name"] == "optimist_1" for event in first_thinking_events)
+    assert all(event["round"] == 1 for event in first_thinking_events)
+    assert all("Team B" not in event["message"] for event in first_thinking_events)
+    assert all("Silas" not in event["message"] for event in first_thinking_events)
+    assert all("Vance" not in event["message"] for event in first_thinking_events)
+
+    judge_index = next(
+        index
+        for index, event in enumerate(events)
+        if event == {"type": "agent_start", "agent_name": "judge", "round": 1}
+    )
+    judge_thinking_events = events[judge_index + 1:judge_index + 4]
+    judge_text = " ".join(event["message"] for event in judge_thinking_events).lower()
+    assert "evidence quality" in judge_text
+    assert "clash" in judge_text
+    assert "consensus" in judge_text
 
     assert len(stored) == 2
     assert stored[-1]["state"]["status"] == "completed"
@@ -234,6 +312,9 @@ async def test_run_debate_stream_yields_error_when_agent_generation_times_out():
     assert [event["type"] for event in events] == [
         "round_start",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "error",
     ]
     assert events[-1]["message"] == (
@@ -260,6 +341,9 @@ async def test_run_debate_stream_times_out_when_ai_call_blocks_event_loop():
     assert [event["type"] for event in events] == [
         "round_start",
         "agent_start",
+        "thinking",
+        "thinking",
+        "thinking",
         "error",
     ]
     assert events[-1]["message"] == (
