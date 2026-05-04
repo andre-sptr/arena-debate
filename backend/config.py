@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     max_concurrent_debates: int = 5
     
     # AI Model Configuration
-    default_model: str = "gemini-3.1-flash-lite-preview"
-    consensus_model: str = "gemini-3-flash-preview"
+    default_model: str = "gemini-3.1-pro-preview"
+    consensus_model: str = "gemini-3.1-pro-preview"
     max_output_tokens: int = 300
     temperature: float = 0.8
     thinking_budget: int = 1024

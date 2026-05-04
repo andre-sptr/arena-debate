@@ -50,6 +50,69 @@ class AIService:
             temperature=settings.temperature,
             max_tokens=4096,  # Significantly more tokens for consensus as thinking models need a large budget
         )
+
+    def _build_argument_prompt(
+        self,
+        agent_name: str,
+        agent_display_name: str,
+        agent_role: str,
+        topic: str,
+        context: str = "",
+        previous_arguments: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        """
+        Build the shared human prompt for normal and streamed arguments.
+        """
+        previous_arguments = previous_arguments or []
+        is_team_a_opening = agent_name in {"optimist_1", "optimist_2"} and not previous_arguments
+
+        prompt = f"Topic: {topic}\n\n"
+        prompt += (
+            "CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
+            "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
+            "If the topic is in English, respond in English. Match the topic's language exactly.\n\n"
+        )
+        prompt += (
+            "Debate participants:\n"
+            "- Team A (Optimists): Nova, Forge\n"
+            "- Team B (Devils): Silas, Vance\n"
+            "- Judge: Andre\n\n"
+        )
+        prompt += (
+            "Natural structured debate rules:\n"
+            "- Write 2-4 concise sentences.\n"
+            "- Keep a clear flow: claim, reason or evidence, and impact.\n"
+            "- Use historical precedent, real-world cases, or known data when relevant.\n"
+            "- Do not invent statistics; if exact data is uncertain, use cautious qualitative evidence or historical precedent.\n"
+            "- Keep the language natural, direct, and easy to read, like a strong human debate speaker.\n\n"
+        )
+
+        if is_team_a_opening:
+            prompt += (
+                "Opening constraint for Team A: Do not name or directly address Team B, Silas, or Vance in this opening. "
+                "Instead, build Team A's affirmative case first with a confident positive claim, grounded reason or evidence, and clear impact.\n\n"
+            )
+        else:
+            prompt += (
+                "Clash guidance: You may directly reference Silas, Vance, Nova, or Forge when it strengthens clash. "
+                "Answer the strongest opposing point instead of attacking a weak version of it.\n\n"
+            )
+
+        if context:
+            prompt += f"Context for this round: {context}\n\n"
+
+        if previous_arguments:
+            prompt += "Previous arguments in this debate:\n"
+            for arg in previous_arguments:
+                name = arg.get("agent_display_name", arg.get("agent_name", "Unknown"))
+                prompt += f"- {name} ({arg['agent_role']}): {arg['content']}\n"
+            prompt += "\n"
+
+        prompt += (
+            f"As {agent_display_name} ({agent_role}), provide your argument. "
+            "Cooperate with your teammate, preserve your persona, and focus on quality over quantity."
+        )
+        return prompt
     
     async def generate_argument(
         self,
@@ -68,33 +131,14 @@ class AIService:
             SystemMessage(content=system_prompt),
         ]
         
-        # Build the prompt
-        prompt = f"Topic: {topic}\n\n"
-        
-        # Auto-language instruction
-        prompt += ("CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
-                   "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
-                   "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
-        
-        # Team context
-        prompt += "Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
-        
-        if context:
-            prompt += f"Context for this round: {context}\n\n"
-        
-        if previous_arguments:
-            prompt += "Previous arguments in this debate:\n"
-            for arg in previous_arguments:
-                # Try to get display name from arg if available, else fallback
-                name = arg.get('agent_display_name', arg.get('agent_name', 'Unknown'))
-                prompt += f"- {name} ({arg['agent_role']}): {arg['content']}\n"
-            prompt += "\n"
-        
-        prompt += (f"As {agent_display_name} ({agent_role}), provide your argument. "
-                   "IMPORTANT: Address your teammate and opponents by their NAMES (e.g., 'As Silas pointed out...' or 'Nova mentioned...'). "
-                   "Keep your response concise, dense, and on-point. "
-                   "Cooperate with your teammate and directly challenge your specific opponents. "
-                   "Focus on quality over quantity.")
+        prompt = self._build_argument_prompt(
+            agent_name=agent_name,
+            agent_display_name=agent_display_name,
+            agent_role=agent_role,
+            topic=topic,
+            context=context,
+            previous_arguments=previous_arguments,
+        )
         
         messages.append(HumanMessage(content=prompt))
         
@@ -262,32 +306,14 @@ DECISION: [YES or NO]"""
             SystemMessage(content=system_prompt),
         ]
         
-        # Build the prompt (same as generate_argument)
-        prompt = f"Topic: {topic}\n\n"
-        
-        # Auto-language instruction
-        prompt += ("CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
-                   "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
-                   "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
-        
-        # Team context
-        prompt += "Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
-        
-        if context:
-            prompt += f"Context for this round: {context}\n\n"
-        
-        if previous_arguments:
-            prompt += "Previous arguments in this debate:\n"
-            for arg in previous_arguments:
-                name = arg.get('agent_display_name', arg.get('agent_name', 'Unknown'))
-                prompt += f"- {name} ({arg['agent_role']}): {arg['content']}\n"
-            prompt += "\n"
-        
-        prompt += (f"As {agent_display_name} ({agent_role}), provide your argument. "
-                   "IMPORTANT: Address your teammate and opponents by their NAMES (e.g., 'As Silas pointed out...' or 'Nova mentioned...'). "
-                   "Keep your response concise, dense, and on-point. "
-                   "Cooperate with your teammate and directly challenge your specific opponents. "
-                   "Focus on quality over quantity.")
+        prompt = self._build_argument_prompt(
+            agent_name=agent_name,
+            agent_display_name=agent_display_name,
+            agent_role=agent_role,
+            topic=topic,
+            context=context,
+            previous_arguments=previous_arguments,
+        )
         
         messages.append(HumanMessage(content=prompt))
         
