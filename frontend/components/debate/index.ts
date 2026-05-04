@@ -20,4 +20,7 @@ export type { DebateProgressProps } from "./DebateProgress";
 export { DebateTopicCard } from "./DebateTopicCard";
 export type { DebateTopicCardProps } from "./DebateTopicCard";
 
+export { ThinkingProcessPanel } from "./ThinkingProcessPanel";
+export type { ThinkingProcessPanelProps } from "./ThinkingProcessPanel";
+
 // Made with Bob

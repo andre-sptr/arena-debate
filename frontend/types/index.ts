@@ -100,6 +100,14 @@ export type DebateStreamStatus =
   | "completed"
   | "failed";
 
+export interface ThinkingStep {
+  type: "thinking";
+  agent_name: string;
+  round: number;
+  phase: string;
+  message: string;
+}
+
 export type DebateStreamEvent =
   | {
       type: "round_start";
@@ -114,6 +122,7 @@ export type DebateStreamEvent =
       type: "argument";
       data: Argument;
     }
+  | ThinkingStep
   | {
       type: "round_end";
       round: number;

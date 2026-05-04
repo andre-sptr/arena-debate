@@ -61,6 +61,34 @@ test("parseSSEBuffer emits complete JSON events and keeps a partial remainder", 
   assert.equal(secondResult.remainder, "");
 });
 
+test("parseSSEBuffer accepts thinking events", () => {
+  const result = parseSSEBuffer(
+    'data: {"type":"thinking","agent_name":"optimist_1","round":1,"phase":"evidence","message":"Grounding the claim in a relevant precedent."}\n\n'
+  );
+
+  assert.deepEqual(plain(result.events), [
+    {
+      type: "thinking",
+      agent_name: "optimist_1",
+      round: 1,
+      phase: "evidence",
+      message: "Grounding the claim in a relevant precedent.",
+    },
+  ]);
+  assert.equal(result.remainder, "");
+});
+
+test("useStreamDebate tracks and clears safe thinking events", () => {
+  const source = readFileSync(path.resolve("hooks/useStreamDebate.ts"), "utf8");
+
+  assert.match(source, /thinkingSteps/);
+  assert.match(source, /activeThinkingStep/);
+  assert.match(source, /case "thinking":/);
+  assert.match(source, /setActiveThinkingStep\(event\)/);
+  assert.match(source, /slice\(-24\)/);
+  assert.match(source, /setActiveThinkingStep\(null\)/);
+});
+
 test("StreamDebateClient allows React Strict Mode remounts to restart the stream", () => {
   const source = readFileSync(
     path.resolve("app/debate/stream/[id]/StreamDebateClient.tsx"),
@@ -70,4 +98,5 @@ test("StreamDebateClient allows React Strict Mode remounts to restart the stream
   assert.doesNotMatch(source, /startedRef/);
   assert.doesNotMatch(source, /useRef/);
   assert.match(source, /void startStreamDebate\(topic, \{ debateId: streamId \}\);/);
+  assert.match(source, /ThinkingProcessPanel/);
 });

@@ -7,13 +7,14 @@ import type {
   Consensus,
   DebateStreamEvent,
   DebateStreamStatus,
+  ThinkingStep,
 } from "@/types";
 
 const AGENT_ORDER = [
-  "devils_advocate",
-  "optimist",
-  "data_analyst",
-  "mediator",
+  "optimist_1",
+  "optimist_2",
+  "devil_1",
+  "devil_2",
 ];
 
 interface StartStreamOptions {
@@ -28,6 +29,8 @@ interface UseStreamDebateReturn {
   status: DebateStreamStatus;
   error: string | null;
   debateId: string | null;
+  thinkingSteps: ThinkingStep[];
+  activeThinkingStep: ThinkingStep | null;
   startStreamDebate: (topic: string, options?: StartStreamOptions) => Promise<void>;
   reset: () => void;
 }
@@ -49,6 +52,8 @@ export function useStreamDebate(): UseStreamDebateReturn {
   const [status, setStatus] = useState<DebateStreamStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [debateId, setDebateId] = useState<string | null>(null);
+  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [activeThinkingStep, setActiveThinkingStep] = useState<ThinkingStep | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const completedRef = useRef(false);
 
@@ -63,6 +68,8 @@ export function useStreamDebate(): UseStreamDebateReturn {
     setStatus("idle");
     setError(null);
     setDebateId(null);
+    setThinkingSteps([]);
+    setActiveThinkingStep(null);
   }, []);
 
   const startStreamDebate = useCallback(
@@ -86,6 +93,8 @@ export function useStreamDebate(): UseStreamDebateReturn {
       setStatus("connecting");
       setError(null);
       setDebateId(options.debateId ?? null);
+      setThinkingSteps([]);
+      setActiveThinkingStep(null);
 
       const handleEvent = (event: DebateStreamEvent) => {
         switch (event.type) {
@@ -97,16 +106,26 @@ export function useStreamDebate(): UseStreamDebateReturn {
           case "agent_start":
             setCurrentRound(event.round);
             setActiveAgent(event.agent_name);
+            setActiveThinkingStep(null);
+            setStatus("in_progress");
+            break;
+          case "thinking":
+            setCurrentRound(event.round);
+            setActiveAgent(event.agent_name);
+            setThinkingSteps((current) => [...current, event].slice(-24));
+            setActiveThinkingStep(event);
             setStatus("in_progress");
             break;
           case "argument":
             setArgumentsList((current) => [...current, event.data]);
             setActiveAgent(getNextAgent(event.data));
+            setActiveThinkingStep(null);
             setStatus("in_progress");
             break;
           case "round_end":
             setCurrentRound(event.round);
             setActiveAgent(null);
+            setActiveThinkingStep(null);
             if (event.round === 3) {
               setStatus("synthesizing");
             }
@@ -114,16 +133,19 @@ export function useStreamDebate(): UseStreamDebateReturn {
           case "consensus":
             setConsensus(event.data);
             setActiveAgent(null);
+            setActiveThinkingStep(null);
             setStatus("synthesizing");
             break;
           case "complete":
             completedRef.current = true;
             setDebateId(event.debate_id);
             setActiveAgent(null);
+            setActiveThinkingStep(null);
             setStatus("completed");
             break;
           case "error":
             setActiveAgent(null);
+            setActiveThinkingStep(null);
             setError(event.message);
             setStatus("failed");
             break;
@@ -141,6 +163,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
         }
 
         setActiveAgent(null);
+        setActiveThinkingStep(null);
         setError(formatAPIError(err));
         setStatus("failed");
       } finally {
@@ -166,6 +189,8 @@ export function useStreamDebate(): UseStreamDebateReturn {
     status,
     error,
     debateId,
+    thinkingSteps,
+    activeThinkingStep,
     startStreamDebate,
     reset,
   };

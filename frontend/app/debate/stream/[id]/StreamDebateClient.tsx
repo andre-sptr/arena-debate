@@ -18,6 +18,7 @@ import {
   ArgumentCard,
   ConsensusPanel,
   DebateProgress,
+  ThinkingProcessPanel,
 } from "@/components/debate";
 import { useStreamDebate } from "@/hooks/useStreamDebate";
 import { DebateStatus } from "@/types";
@@ -77,6 +78,8 @@ export default function StreamDebateClient({
     status,
     error,
     debateId,
+    thinkingSteps,
+    activeThinkingStep,
     startStreamDebate,
   } = useStreamDebate();
 
@@ -255,6 +258,12 @@ export default function StreamDebateClient({
           ))}
         </div>
       </Card>
+
+      <ThinkingProcessPanel
+        activeStep={activeThinkingStep}
+        steps={thinkingSteps}
+        activeAgent={activeAgent}
+      />
 
       {error && (
         <Card variant="glass-strong" className="border-red-500/20 p-6">
