@@ -3,7 +3,6 @@ SQLAlchemy models for debate data
 """
 from sqlalchemy import Column, String, Text, DateTime, Integer, JSON, Enum as SQLEnum
 from sqlalchemy.sql import func
-from datetime import datetime
 import enum
 from database import Base
 

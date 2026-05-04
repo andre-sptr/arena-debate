@@ -389,8 +389,8 @@ class APIClient {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await fetch(this.baseURL);
-      return true;
+      const response = await fetch(this.baseURL);
+      return response.ok;
     } catch {
       return false;
     }

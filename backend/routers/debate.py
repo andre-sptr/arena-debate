@@ -9,14 +9,13 @@ from pydantic import BaseModel, Field
 from typing import Any, AsyncIterator, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from sqlalchemy.orm import selectinload
 import logging
 import json
 import asyncio
 from datetime import timezone
 
 from database import get_db
-from models.debate import Debate, Argument
+from models.debate import Debate
 from orchestrator import get_orchestrator
 
 # Configure logging

@@ -18,7 +18,6 @@ from .state import (
     ConsensusDict,
     create_initial_state,
     get_previous_arguments,
-    is_debate_complete,
     has_error,
 )
 from services.ai_service import get_ai_service
@@ -492,7 +491,7 @@ class DebateOrchestrator:
                     print(f"[Orchestrator] Consensus reached in Round {round_number}!")
                     break
                 elif round_number == 7:
-                    print(f"[Orchestrator] Max rounds (7) reached. Finalizing.")
+                    print("[Orchestrator] Max rounds (7) reached. Finalizing.")
                     break
 
             # Final Consensus Generation

@@ -3,14 +3,14 @@ Arena - AI Debate & Consensus Platform
 FastAPI Backend Entry Point
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 import logging
 
 from routers import debate, history
-from database import init_db
+from database import check_db_health, init_db
 from config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,8 @@ async def lifespan(app: FastAPI):
         await init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
-        logger.error(f"Error initializing database: {e}")
+        logger.exception(f"Error initializing database: {e}")
+        raise
     
     yield
 
@@ -71,16 +72,26 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check(response: Response):
     """Detailed health check"""
-    return {
-        "status": "healthy",
+    database_healthy, database_error = await check_db_health()
+    response.status_code = (
+        status.HTTP_200_OK
+        if database_healthy
+        else status.HTTP_503_SERVICE_UNAVAILABLE
+    )
+
+    payload = {
+        "status": "healthy" if database_healthy else "unhealthy",
         "services": {
             "api": "operational",
             "vertex_ai": "ready",
-            "database": "connected"
-        }
+            "database": "connected" if database_healthy else "unreachable",
+        },
     }
+    if database_error:
+        payload["error"] = database_error
+    return payload
 
 
 if __name__ == "__main__":

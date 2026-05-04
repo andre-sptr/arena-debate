@@ -104,7 +104,10 @@ def get_previous_arguments(state: DebateState) -> List[ArgumentDict]:
 
 def is_debate_complete(state: DebateState) -> bool:
     """
-    Check if the debate is complete (all 3 rounds done and consensus generated).
+    Check if the debate is complete.
+
+    A debate is complete when DebateState["current_round"] is greater than 7
+    and DebateState["consensus"] has been generated.
     
     Args:
         state: Current debate state

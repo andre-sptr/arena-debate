@@ -4,6 +4,7 @@ Database configuration and session management using SQLAlchemy
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
 import os
 from dotenv import load_dotenv
 
@@ -69,6 +70,21 @@ async def init_db():
     """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+async def check_db_health() -> tuple[bool, str | None]:
+    """
+    Verify database connectivity with a minimal query.
+
+    Returns:
+        Tuple of (is_healthy, error_message).
+    """
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
 
 
 # Close database connections

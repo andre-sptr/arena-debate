@@ -18,6 +18,7 @@ class FakeAIService:
     async def generate_argument(
         self,
         agent_name,
+        agent_display_name,
         agent_role,
         system_prompt,
         topic,
@@ -35,11 +36,15 @@ class FakeAIService:
             "usage_metadata": None,
         }
 
+    async def check_consensus(self, topic, all_arguments, round_number):
+        return round_number >= 3
+
 
 class HangingAIService:
     async def generate_argument(
         self,
         agent_name,
+        agent_display_name,
         agent_role,
         system_prompt,
         topic,
@@ -61,13 +66,14 @@ class BlockingAIService:
     async def generate_argument(
         self,
         agent_name,
+        agent_display_name,
         agent_role,
         system_prompt,
         topic,
         context="",
         previous_arguments=None,
     ):
-        time.sleep(0.2)
+        await asyncio.to_thread(time.sleep, 0.2)
         return "unreachable"
 
     async def generate_consensus(self, topic, all_arguments):
@@ -82,10 +88,10 @@ def make_orchestrator(ai_service=None):
     orchestrator = DebateOrchestrator.__new__(DebateOrchestrator)
     orchestrator.ai_service = ai_service or FakeAIService()
     orchestrator.agent_order = [
-        "devils_advocate",
-        "optimist",
-        "data_analyst",
-        "mediator",
+        "optimist_1",
+        "optimist_2",
+        "devil_1",
+        "devil_2",
     ]
     orchestrator.max_retries = 1
     orchestrator.retry_delay = 0
@@ -121,21 +127,18 @@ def make_completed_state(debate_id, topic, argument_contents):
 @pytest.mark.asyncio
 async def test_run_debate_stream_yields_incremental_events_and_stores_final_state():
     orchestrator = make_orchestrator()
-    stored = {}
+    stored = []
 
     async def store_debate_results(state, db_session):
-        stored["state"] = state
-        stored["db_session"] = db_session
+        stored.append({"state": state, "db_session": db_session})
 
     orchestrator._store_debate_results = store_debate_results
-    db_session = object()
 
     events = [
         event
         async for event in orchestrator.run_debate_stream(
             topic="Should cities ban cars?",
             debate_id="debate-1",
-            db_session=db_session,
         )
     ]
 
@@ -150,6 +153,7 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
         "agent_start",
         "argument",
         "round_end",
+        "agent_start",
         "round_start",
         "agent_start",
         "argument",
@@ -160,6 +164,7 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
         "agent_start",
         "argument",
         "round_end",
+        "agent_start",
         "round_start",
         "agent_start",
         "argument",
@@ -170,31 +175,32 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
         "agent_start",
         "argument",
         "round_end",
+        "agent_start",
         "consensus",
         "complete",
     ]
     assert events[0]["round"] == 1
-    assert events[10]["round"] == 2
-    assert events[20]["round"] == 3
+    assert events[11]["round"] == 2
+    assert events[22]["round"] == 3
     assert events[-1]["debate_id"] == "debate-1"
 
     argument_events = [event for event in events if event["type"] == "argument"]
     agent_start_events = [event for event in events if event["type"] == "agent_start"]
-    assert len(agent_start_events) == 12
+    assert len(agent_start_events) == 15
     assert agent_start_events[0] == {
         "type": "agent_start",
-        "agent_name": "devils_advocate",
+        "agent_name": "optimist_1",
         "round": 1,
     }
     assert agent_start_events[-1] == {
         "type": "agent_start",
-        "agent_name": "mediator",
+        "agent_name": "judge",
         "round": 3,
     }
     assert len(argument_events) == 12
-    assert argument_events[0]["data"]["agent_name"] == "devils_advocate"
+    assert argument_events[0]["data"]["agent_name"] == "optimist_1"
     assert argument_events[0]["data"]["round_number"] == 1
-    assert argument_events[-1]["data"]["agent_name"] == "mediator"
+    assert argument_events[-1]["data"]["agent_name"] == "devil_2"
     assert argument_events[-1]["data"]["round_number"] == 3
     assert argument_events[-1]["data"]["timestamp"]
 
@@ -202,24 +208,24 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     assert consensus_event["data"]["content"] == "Consensus for Should cities ban cars?"
     assert consensus_event["data"]["key_points"] == ["First point", "Second point"]
 
-    assert stored["db_session"] is db_session
-    assert stored["state"]["status"] == "completed"
-    assert stored["state"]["debate_id"] == "debate-1"
-    assert len(stored["state"]["arguments"]) == 12
-    assert stored["state"]["consensus"]["content"] == "Consensus for Should cities ban cars?"
+    assert len(stored) == 2
+    assert stored[-1]["state"]["status"] == "completed"
+    assert stored[-1]["state"]["debate_id"] == "debate-1"
+    assert len(stored[-1]["state"]["arguments"]) == 12
+    assert stored[-1]["state"]["consensus"]["content"] == "Consensus for Should cities ban cars?"
 
 
 @pytest.mark.asyncio
 async def test_run_debate_stream_yields_error_when_agent_generation_times_out():
     orchestrator = make_orchestrator(HangingAIService())
     orchestrator.generation_timeout = 0.01
+    orchestrator._store_debate_results = _noop_store_debate_results
 
     events = await asyncio.wait_for(
         _collect_stream_events(
             orchestrator.run_debate_stream(
                 topic="Will this timeout?",
                 debate_id="debate-timeout",
-                db_session=None,
             )
         ),
         timeout=1,
@@ -231,7 +237,7 @@ async def test_run_debate_stream_yields_error_when_agent_generation_times_out():
         "error",
     ]
     assert events[-1]["message"] == (
-        "devils_advocate generation timed out after 0.01 seconds"
+        "Failed after 1 retries: optimist_1 generation timed out after 0.01 seconds"
     )
 
 
@@ -239,13 +245,13 @@ async def test_run_debate_stream_yields_error_when_agent_generation_times_out():
 async def test_run_debate_stream_times_out_when_ai_call_blocks_event_loop():
     orchestrator = make_orchestrator(BlockingAIService())
     orchestrator.generation_timeout = 0.01
+    orchestrator._store_debate_results = _noop_store_debate_results
 
     events = await asyncio.wait_for(
         _collect_stream_events(
             orchestrator.run_debate_stream(
                 topic="Will this blocking call timeout?",
                 debate_id="debate-blocking-timeout",
-                db_session=None,
             )
         ),
         timeout=1,
@@ -257,8 +263,12 @@ async def test_run_debate_stream_times_out_when_ai_call_blocks_event_loop():
         "error",
     ]
     assert events[-1]["message"] == (
-        "devils_advocate generation timed out after 0.01 seconds"
+        "Failed after 1 retries: optimist_1 generation timed out after 0.01 seconds"
     )
+
+
+async def _noop_store_debate_results(state, db_session):
+    return None
 
 
 @pytest.mark.asyncio

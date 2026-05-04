@@ -111,7 +111,7 @@ const AGENT_COLORS: Record<string, string> = {
  * 
  * @example
  * ```ts
- * getAgentColor("devils_advocate")
+ * getAgentColor("devil_1")
  * // Returns: "#ef4444"
  * ```
  */
@@ -149,8 +149,8 @@ const AGENT_DISPLAY_NAMES: Record<string, string> = {
  * 
  * @example
  * ```ts
- * getAgentEmoji("devils_advocate")
- * // Returns: "😈"
+ * getAgentEmoji("devil_1")
+ * // Returns: "🧠"
  * ```
  */
 export function getAgentEmoji(agentName: string): string {

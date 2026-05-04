@@ -77,10 +77,7 @@ class AIService:
                    "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
         
         # Team context
-        team_a = "Nova & Forge"
-        team_b = "Silas & Vance"
-        
-        prompt += f"Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
+        prompt += "Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
         
         if context:
             prompt += f"Context for this round: {context}\n\n"
@@ -274,7 +271,7 @@ DECISION: [YES or NO]"""
                    "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
         
         # Team context
-        prompt += f"Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
+        prompt += "Debate participants:\n- Team A (Optimists): Nova, Forge\n- Team B (Devils): Silas, Vance\n- Judge: Andre\n\n"
         
         if context:
             prompt += f"Context for this round: {context}\n\n"

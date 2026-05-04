@@ -1,16 +1,17 @@
 """
 AI Agent Definitions for Arena Debate Platform
 
-This module contains the four debate agents, each with unique personas and debate styles:
-- Devil's Advocate: Skeptical challenger who questions assumptions
-- The Optimist: Visionary enthusiast who highlights opportunities
-- Data Analyst: Objective researcher who provides evidence-based analysis
-- The Mediator: Balanced synthesizer who seeks common ground
+This module contains the active debate agents, each with unique personas and debate styles:
+- devil_1 (Silas): Logical critic for Team B who challenges Team A's structure and assumptions
+- devil_2 (Vance): Risk analyst for Team B who surfaces empirical and operational risks
+- optimist_1 (Nova): Visionary architect for Team A who frames ambitious opportunities
+- optimist_2 (Forge): Pragmatic idealist for Team A who grounds optimism in execution
+- judge (Andre): Consensus arbiter who evaluates progress and determines when debate resolves
 
 Each agent provides:
 - Unique system prompt defining their personality
 - Metadata for UI representation (color, emoji, role)
-- Context formatting for different debate rounds
+- Context formatting for debate rounds and consensus checks
 """
 from .devil_1 import Devil1Agent
 from .devil_2 import Devil2Agent
@@ -34,7 +35,7 @@ def get_agent(agent_name: str):
     Get an agent class by name.
     
     Args:
-        agent_name: Name of the agent (e.g., "devils_advocate")
+        agent_name: Name of the agent (e.g., "devil_1")
         
     Returns:
         Agent class
@@ -82,10 +83,11 @@ def get_all_agents_metadata() -> list:
 
 
 __all__ = [
-    "DevilsAdvocateAgent",
-    "OptimistAgent",
-    "DataAnalystAgent",
-    "MediatorAgent",
+    "Devil1Agent",
+    "Devil2Agent",
+    "Optimist1Agent",
+    "Optimist2Agent",
+    "JudgeAgent",
     "AGENTS",
     "get_agent",
     "get_all_agents",
