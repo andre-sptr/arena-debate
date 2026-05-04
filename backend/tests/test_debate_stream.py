@@ -264,6 +264,9 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
         if event["type"] == "argument" and event["data"]["agent_name"] == "optimist_1"
     )
     first_thinking_events = events[first_agent_index + 1:first_argument_index]
+    first_thinking_text = " ".join(
+        event["message"] for event in first_thinking_events
+    ).lower()
     assert [event["type"] for event in first_thinking_events] == [
         "thinking",
         "thinking",
@@ -271,9 +274,27 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     ]
     assert all(event["agent_name"] == "optimist_1" for event in first_thinking_events)
     assert all(event["round"] == 1 for event in first_thinking_events)
+    assert "pro" in first_thinking_text
     assert all("Team B" not in event["message"] for event in first_thinking_events)
     assert all("Silas" not in event["message"] for event in first_thinking_events)
     assert all("Vance" not in event["message"] for event in first_thinking_events)
+
+    first_kontra_index = next(
+        index
+        for index, event in enumerate(events)
+        if event == {"type": "agent_start", "agent_name": "devil_1", "round": 1}
+    )
+    first_kontra_argument_index = next(
+        index
+        for index, event in enumerate(events)
+        if event["type"] == "argument" and event["data"]["agent_name"] == "devil_1"
+    )
+    first_kontra_text = " ".join(
+        event["message"]
+        for event in events[first_kontra_index + 1:first_kontra_argument_index]
+    ).lower()
+    assert "kontra" in first_kontra_text
+    assert "pro" in first_kontra_text
 
     judge_index = next(
         index
@@ -282,6 +303,8 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
     )
     judge_thinking_events = events[judge_index + 1:judge_index + 4]
     judge_text = " ".join(event["message"] for event in judge_thinking_events).lower()
+    assert "pro" in judge_text
+    assert "kontra" in judge_text
     assert "evidence quality" in judge_text
     assert "clash" in judge_text
     assert "consensus" in judge_text

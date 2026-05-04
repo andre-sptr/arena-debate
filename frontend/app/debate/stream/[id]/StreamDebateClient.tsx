@@ -18,7 +18,6 @@ import {
   ArgumentCard,
   ConsensusPanel,
   DebateProgress,
-  ThinkingProcessPanel,
 } from "@/components/debate";
 import { useStreamDebate } from "@/hooks/useStreamDebate";
 import { DebateStatus } from "@/types";
@@ -78,8 +77,7 @@ export default function StreamDebateClient({
     status,
     error,
     debateId,
-    thinkingSteps,
-    activeThinkingStep,
+    pendingArgument,
     startStreamDebate,
   } = useStreamDebate();
 
@@ -104,9 +102,26 @@ export default function StreamDebateClient({
     );
   }, [debateArguments]);
 
-  const rounds = useMemo(
-    () => Object.keys(argumentsByRound).map(Number).sort((a, b) => a - b),
-    [argumentsByRound]
+  const visibleArgumentsByRound = useMemo(() => {
+    if (!pendingArgument) {
+      return argumentsByRound;
+    }
+
+    return {
+      ...argumentsByRound,
+      [pendingArgument.round_number]: [
+        ...(argumentsByRound[pendingArgument.round_number] ?? []),
+        pendingArgument,
+      ],
+    };
+  }, [argumentsByRound, pendingArgument]);
+
+  const visibleRounds = useMemo(
+    () =>
+      Object.keys(visibleArgumentsByRound)
+        .map(Number)
+        .sort((a, b) => a - b),
+    [visibleArgumentsByRound]
   );
 
   const progressStatus =
@@ -259,12 +274,6 @@ export default function StreamDebateClient({
         </div>
       </Card>
 
-      <ThinkingProcessPanel
-        activeStep={activeThinkingStep}
-        steps={thinkingSteps}
-        activeAgent={activeAgent}
-      />
-
       {error && (
         <Card variant="glass-strong" className="border-red-500/20 p-6">
           <div className="flex items-start gap-4">
@@ -289,7 +298,7 @@ export default function StreamDebateClient({
           </h2>
         </div>
 
-        {debateArguments.length === 0 && status !== "failed" ? (
+        {visibleRounds.length === 0 && status !== "failed" ? (
           <Card variant="glass" className="p-10 text-center">
             <div className="space-y-4">
               <Spinner size="lg" className="mx-auto" />
@@ -305,7 +314,7 @@ export default function StreamDebateClient({
           </Card>
         ) : (
           <div className="space-y-8">
-            {rounds.map((roundNumber, roundIndex) => (
+            {visibleRounds.map((roundNumber, roundIndex) => (
               <motion.div
                 key={roundNumber}
                 className="space-y-4"
@@ -325,9 +334,9 @@ export default function StreamDebateClient({
                   <div className="h-px flex-1 bg-white/[0.06]" />
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  {argumentsByRound[roundNumber].map((argument, index) => (
+                  {visibleArgumentsByRound[roundNumber].map((argument, index) => (
                     <ArgumentCard
-                      key={`${roundNumber}-${argument.agent_name}-${index}`}
+                      key={`${roundNumber}-${argument.agent_name}-${index}-${argument.thinking_active ? "thinking" : "final"}`}
                       argument={argument}
                       index={index}
                     />

@@ -78,15 +78,31 @@ test("parseSSEBuffer accepts thinking events", () => {
   assert.equal(result.remainder, "");
 });
 
-test("useStreamDebate tracks and clears safe thinking events", () => {
+test("useStreamDebate buffers safe thinking steps per pending argument", () => {
   const source = readFileSync(path.resolve("hooks/useStreamDebate.ts"), "utf8");
 
-  assert.match(source, /thinkingSteps/);
-  assert.match(source, /activeThinkingStep/);
+  assert.match(source, /thinkingBufferRef/);
+  assert.match(source, /pendingArgument/);
   assert.match(source, /case "thinking":/);
-  assert.match(source, /setActiveThinkingStep\(event\)/);
-  assert.match(source, /slice\(-24\)/);
-  assert.match(source, /setActiveThinkingStep\(null\)/);
+  assert.match(source, /thinking_steps/);
+  assert.match(source, /thinking_active/);
+  assert.match(source, /thinkingBufferRef\.current/);
+  assert.match(source, /setPendingArgument/);
+  assert.doesNotMatch(source, /activeThinkingStep/);
+  assert.doesNotMatch(source, /thinkingSteps/);
+});
+
+test("ArgumentCard includes collapsible per-argument thinking UI", () => {
+  const source = readFileSync(
+    path.resolve("components/debate/ArgumentCard.tsx"),
+    "utf8"
+  );
+
+  assert.match(source, /thinking_steps/);
+  assert.match(source, /thinking_active/);
+  assert.match(source, /Thinking process/);
+  assert.match(source, /ChevronDown/);
+  assert.match(source, /thinkingOpen/);
 });
 
 test("StreamDebateClient allows React Strict Mode remounts to restart the stream", () => {
@@ -98,5 +114,6 @@ test("StreamDebateClient allows React Strict Mode remounts to restart the stream
   assert.doesNotMatch(source, /startedRef/);
   assert.doesNotMatch(source, /useRef/);
   assert.match(source, /void startStreamDebate\(topic, \{ debateId: streamId \}\);/);
-  assert.match(source, /ThinkingProcessPanel/);
+  assert.match(source, /pendingArgument/);
+  assert.doesNotMatch(source, /ThinkingProcessPanel/);
 });

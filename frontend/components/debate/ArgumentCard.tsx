@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
+import { Brain, CheckCircle2, ChevronDown, Radio } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader } from "@/components/ui";
@@ -33,6 +34,14 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
     const agentColor = getAgentColor(argument.agent_name);
     const agentEmoji = getAgentEmoji(argument.agent_name);
     const agentVariant = getAgentVariant(argument.agent_name);
+    const hasThinking = Boolean(argument.thinking_steps?.length);
+    const [thinkingOpen, setThinkingOpen] = React.useState(
+      Boolean(argument.thinking_active)
+    );
+
+    React.useEffect(() => {
+      setThinkingOpen(Boolean(argument.thinking_active));
+    }, [argument.thinking_active, argument.agent_name, argument.round_number]);
 
     return (
       <motion.div
@@ -89,17 +98,91 @@ export const ArgumentCard = React.forwardRef<HTMLDivElement, ArgumentCardProps>(
           </CardHeader>
 
           <CardContent className="pt-0">
-            {/* Argument Content */}
-            <div
-              className="pl-3 sm:pl-4 border-l-2"
-              style={{ borderColor: `${agentColor}20` }}
-            >
-              <div className="text-[15px] sm:text-base text-gray-300 leading-relaxed markdown-content">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {argument.content}
-                </ReactMarkdown>
+            {hasThinking && (
+              <div className="mb-4 overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.03]">
+                <button
+                  type="button"
+                  onClick={() => setThinkingOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+                  aria-expanded={thinkingOpen}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Brain
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: agentColor }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-medium text-gray-200">
+                      Thinking process
+                    </span>
+                    {argument.thinking_active && (
+                      <Badge variant="primary" size="sm">
+                        Thinking
+                      </Badge>
+                    )}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-gray-400 transition-transform",
+                      thinkingOpen && "rotate-180"
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {thinkingOpen && (
+                  <div className="space-y-2 border-t border-white/[0.06] px-3 py-3">
+                    {argument.thinking_steps?.map((step, stepIndex) => {
+                      const isLatest =
+                        argument.thinking_active &&
+                        stepIndex === (argument.thinking_steps?.length ?? 0) - 1;
+
+                      return (
+                        <div
+                          key={`${step.agent_name}-${step.round}-${step.phase}-${stepIndex}`}
+                          className="flex items-start gap-2"
+                        >
+                          {isLatest ? (
+                            <Radio
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                              style={{ color: agentColor }}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <CheckCircle2
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-500"
+                              aria-hidden="true"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium capitalize text-gray-300">
+                              {step.phase}
+                            </p>
+                            <p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+                              {step.message}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Argument Content */}
+            {!argument.thinking_active && (
+              <div
+                className="pl-3 sm:pl-4 border-l-2"
+                style={{ borderColor: `${agentColor}20` }}
+              >
+                <div className="text-[15px] sm:text-base text-gray-300 leading-relaxed markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {argument.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

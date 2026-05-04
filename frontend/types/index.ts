@@ -34,6 +34,8 @@ export interface Argument {
   content: string;
   round_number: number;
   timestamp?: string;
+  thinking_steps?: ThinkingStep[];
+  thinking_active?: boolean;
 }
 
 /**

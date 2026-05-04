@@ -17,6 +17,13 @@ const AGENT_ORDER = [
   "devil_2",
 ];
 
+const AGENT_ROLES: Record<string, string> = {
+  optimist_1: "The Visionary Architect",
+  optimist_2: "The Pragmatic Idealist",
+  devil_1: "The Logical Critic",
+  devil_2: "The Risk Analyst",
+};
+
 interface StartStreamOptions {
   debateId?: string;
 }
@@ -29,10 +36,32 @@ interface UseStreamDebateReturn {
   status: DebateStreamStatus;
   error: string | null;
   debateId: string | null;
-  thinkingSteps: ThinkingStep[];
-  activeThinkingStep: ThinkingStep | null;
+  pendingArgument: Argument | null;
   startStreamDebate: (topic: string, options?: StartStreamOptions) => Promise<void>;
   reset: () => void;
+}
+
+function getThinkingKey(agentName: string, roundNumber: number): string {
+  return `${roundNumber}:${agentName}`;
+}
+
+function isDebateAgent(agentName: string): boolean {
+  return AGENT_ORDER.includes(agentName);
+}
+
+function createPendingArgument(
+  agentName: string,
+  roundNumber: number,
+  steps: ThinkingStep[] = []
+): Argument {
+  return {
+    agent_name: agentName,
+    agent_role: AGENT_ROLES[agentName] ?? "Debate Agent",
+    content: "",
+    round_number: roundNumber,
+    thinking_steps: steps,
+    thinking_active: true,
+  };
 }
 
 function getNextAgent(argument: Argument): string | null {
@@ -52,15 +81,24 @@ export function useStreamDebate(): UseStreamDebateReturn {
   const [status, setStatus] = useState<DebateStreamStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [debateId, setDebateId] = useState<string | null>(null);
-  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
-  const [activeThinkingStep, setActiveThinkingStep] = useState<ThinkingStep | null>(null);
+  const [pendingArgument, setPendingArgument] = useState<Argument | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const completedRef = useRef(false);
+  const thinkingBufferRef = useRef<Record<string, ThinkingStep[]>>({});
+  const activeThinkingKeyRef = useRef<string | null>(null);
+
+  const clearThinkingBuffer = useCallback(() => {
+    thinkingBufferRef.current = {};
+    activeThinkingKeyRef.current = null;
+    setPendingArgument(null);
+  }, []);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     completedRef.current = false;
+    thinkingBufferRef.current = {};
+    activeThinkingKeyRef.current = null;
     setCurrentRound(0);
     setArgumentsList([]);
     setActiveAgent(null);
@@ -68,8 +106,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
     setStatus("idle");
     setError(null);
     setDebateId(null);
-    setThinkingSteps([]);
-    setActiveThinkingStep(null);
+    setPendingArgument(null);
   }, []);
 
   const startStreamDebate = useCallback(
@@ -85,6 +122,8 @@ export function useStreamDebate(): UseStreamDebateReturn {
       const controller = new AbortController();
       abortRef.current = controller;
       completedRef.current = false;
+      thinkingBufferRef.current = {};
+      activeThinkingKeyRef.current = null;
 
       setCurrentRound(0);
       setArgumentsList([]);
@@ -93,8 +132,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
       setStatus("connecting");
       setError(null);
       setDebateId(options.debateId ?? null);
-      setThinkingSteps([]);
-      setActiveThinkingStep(null);
+      setPendingArgument(null);
 
       const handleEvent = (event: DebateStreamEvent) => {
         switch (event.type) {
@@ -106,26 +144,57 @@ export function useStreamDebate(): UseStreamDebateReturn {
           case "agent_start":
             setCurrentRound(event.round);
             setActiveAgent(event.agent_name);
-            setActiveThinkingStep(null);
+            activeThinkingKeyRef.current = getThinkingKey(event.agent_name, event.round);
+            thinkingBufferRef.current[activeThinkingKeyRef.current] = [];
+            setPendingArgument(
+              isDebateAgent(event.agent_name)
+                ? createPendingArgument(event.agent_name, event.round)
+                : null
+            );
             setStatus("in_progress");
             break;
           case "thinking":
             setCurrentRound(event.round);
             setActiveAgent(event.agent_name);
-            setThinkingSteps((current) => [...current, event].slice(-24));
-            setActiveThinkingStep(event);
+            {
+              const key = getThinkingKey(event.agent_name, event.round);
+              const nextSteps = [...(thinkingBufferRef.current[key] ?? []), event];
+              thinkingBufferRef.current[key] = nextSteps;
+              activeThinkingKeyRef.current = key;
+              if (isDebateAgent(event.agent_name)) {
+                setPendingArgument(
+                  createPendingArgument(event.agent_name, event.round, nextSteps)
+                );
+              }
+            }
             setStatus("in_progress");
             break;
           case "argument":
-            setArgumentsList((current) => [...current, event.data]);
+            {
+              const key = getThinkingKey(
+                event.data.agent_name,
+                event.data.round_number
+              );
+              const stepsForArgument = thinkingBufferRef.current[key] ?? [];
+              delete thinkingBufferRef.current[key];
+              activeThinkingKeyRef.current = null;
+              setArgumentsList((current) => [
+                ...current,
+                {
+                  ...event.data,
+                  thinking_steps: stepsForArgument,
+                  thinking_active: false,
+                },
+              ]);
+              setPendingArgument(null);
+            }
             setActiveAgent(getNextAgent(event.data));
-            setActiveThinkingStep(null);
             setStatus("in_progress");
             break;
           case "round_end":
             setCurrentRound(event.round);
             setActiveAgent(null);
-            setActiveThinkingStep(null);
+            clearThinkingBuffer();
             if (event.round === 3) {
               setStatus("synthesizing");
             }
@@ -133,19 +202,19 @@ export function useStreamDebate(): UseStreamDebateReturn {
           case "consensus":
             setConsensus(event.data);
             setActiveAgent(null);
-            setActiveThinkingStep(null);
+            clearThinkingBuffer();
             setStatus("synthesizing");
             break;
           case "complete":
             completedRef.current = true;
             setDebateId(event.debate_id);
             setActiveAgent(null);
-            setActiveThinkingStep(null);
+            clearThinkingBuffer();
             setStatus("completed");
             break;
           case "error":
             setActiveAgent(null);
-            setActiveThinkingStep(null);
+            clearThinkingBuffer();
             setError(event.message);
             setStatus("failed");
             break;
@@ -163,7 +232,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
         }
 
         setActiveAgent(null);
-        setActiveThinkingStep(null);
+        clearThinkingBuffer();
         setError(formatAPIError(err));
         setStatus("failed");
       } finally {
@@ -172,7 +241,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
         }
       }
     },
-    []
+    [clearThinkingBuffer]
   );
 
   useEffect(() => {
@@ -189,8 +258,7 @@ export function useStreamDebate(): UseStreamDebateReturn {
     status,
     error,
     debateId,
-    thinkingSteps,
-    activeThinkingStep,
+    pendingArgument,
     startStreamDebate,
     reset,
   };

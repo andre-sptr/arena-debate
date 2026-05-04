@@ -58,27 +58,27 @@ class DebateOrchestrator:
         """Return safe deterministic thinking-status events for the UI."""
         if agent_name == "judge":
             steps = [
-                ("clash", "Evaluating the main clash between both teams."),
+                ("clash", "Evaluating the main clash between the pro and kontra sides."),
                 ("evidence", "Checking evidence quality and which claims are best supported."),
-                ("consensus", "Assessing whether consensus readiness is justified."),
+                ("consensus", "Assessing whether pro-kontra consensus readiness is justified."),
             ]
         elif agent_name in {"optimist_1", "optimist_2"} and round_number == 1:
             steps = [
-                ("framing", "Framing Team A's affirmative case."),
-                ("evidence", "Grounding the claim in a relevant precedent or practical pattern."),
-                ("drafting", "Preparing a concise opening argument."),
+                ("framing", "Framing the pro case clearly around the topic."),
+                ("evidence", "Grounding the pro claim in a relevant precedent or practical pattern."),
+                ("drafting", "Preparing a concise pro opening argument."),
             ]
         elif agent_name in {"optimist_1", "optimist_2"}:
             steps = [
-                ("review", "Reviewing the strongest objection from the previous turn."),
-                ("evidence", "Checking which example or evidence best supports the response."),
-                ("drafting", "Shaping a concise rebuttal and impact."),
+                ("review", "Reviewing the strongest kontra objection from the previous turn."),
+                ("evidence", "Checking which pro example or evidence best supports the response."),
+                ("drafting", "Shaping a concise pro rebuttal and impact."),
             ]
         else:
             steps = [
-                ("assumptions", "Inspecting assumptions and burden of proof."),
-                ("risk", "Checking historical risk, tradeoffs, and real-world constraints."),
-                ("rebuttal", "Preparing a concise rebuttal with clear impact."),
+                ("assumptions", "Inspecting the pro side's assumptions and burden of proof."),
+                ("risk", "Checking kontra risks, historical failures, and real-world constraints."),
+                ("rebuttal", "Preparing a concise kontra rebuttal with clear impact."),
             ]
 
         return [
