@@ -24,8 +24,8 @@ def test_team_a_round_one_prompt_builds_affirmative_case_without_opponent_mentio
         previous_arguments=[],
     )
 
-    assert "Do not name or directly address Team B, Silas, or Vance in this opening" in prompt
-    assert "build Team A's affirmative case first" in prompt
+    assert "Opening constraint for Team A (PRO): Do not name Team B in your opening" in prompt
+    assert "Simply present your strongest case for WHY THE TOPIC IS TRUE" in prompt
     assert "Silas pointed out" not in prompt
     assert "Vance warned" not in prompt
 
@@ -49,7 +49,8 @@ def test_team_a_later_round_prompt_allows_direct_rebuttal_and_opponent_reference
         ],
     )
 
-    assert "You may directly reference Silas, Vance, Nova, or Forge when it strengthens clash" in prompt
+    assert "Debate guidance: Directly address the core arguments about the topic's validity" in prompt
+    assert "Answer the strongest version of the opposing position" in prompt
     assert "Silas" in prompt
     assert "The plan overpromises." in prompt
 
@@ -76,8 +77,8 @@ def test_argument_prompt_requires_natural_structure_and_evidence(agent_name, dis
     )
 
     assert "2-4 concise sentences" in prompt
-    assert "claim, reason or evidence, and impact" in prompt
-    assert "historical precedent, real-world cases, or known data" in prompt
+    assert "clear claim, reasoning, and evidence" in prompt
+    assert "historical precedent, real-world cases, or known facts" in prompt
     assert "Do not invent statistics" in prompt
 
 
@@ -127,10 +128,10 @@ async def test_generate_argument_and_stream_argument_use_same_prompt_builder(mon
 @pytest.mark.parametrize(
     "agent_cls,keywords",
     [
-        (Optimist1Agent, ["historical progress", "evidence", "2-4 sentences"]),
-        (Optimist2Agent, ["implementation examples", "measurable impact", "2-4 sentences"]),
-        (Devil1Agent, ["burden of proof", "tradeoff", "evidence", "2-4 sentences"]),
-        (Devil2Agent, ["historical failures", "unintended consequences", "2-4 sentences"]),
+        (Optimist1Agent, ["simple language", "evidence", "2-4 sentences"]),
+        (Optimist2Agent, ["real-world examples", "evidence-based", "2-4 sentences"]),
+        (Devil1Agent, ["logical reasoning", "evidence", "2-4 sentences"]),
+        (Devil2Agent, ["real-world examples", "evidence against the topic", "2-4 sentences"]),
     ],
 )
 def test_active_agent_personas_require_evidence_and_concise_debate_style(agent_cls, keywords):

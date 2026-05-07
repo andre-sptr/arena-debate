@@ -84,12 +84,20 @@ test("useStreamDebate buffers safe thinking steps per pending argument", () => {
   assert.match(source, /thinkingBufferRef/);
   assert.match(source, /pendingArgument/);
   assert.match(source, /case "thinking":/);
+  assert.match(source, /case "consensus_start":/);
   assert.match(source, /thinking_steps/);
   assert.match(source, /thinking_active/);
   assert.match(source, /thinkingBufferRef\.current/);
   assert.match(source, /setPendingArgument/);
   assert.doesNotMatch(source, /activeThinkingStep/);
   assert.doesNotMatch(source, /thinkingSteps/);
+});
+
+test("DebateStreamEvent includes consensus_start before final consensus", () => {
+  const source = readFileSync(path.resolve("types/index.ts"), "utf8");
+
+  assert.match(source, /type: "consensus_start"/);
+  assert.match(source, /round: number/);
 });
 
 test("ArgumentCard includes collapsible per-argument thinking UI", () => {

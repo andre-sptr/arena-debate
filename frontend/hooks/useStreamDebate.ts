@@ -195,9 +195,13 @@ export function useStreamDebate(): UseStreamDebateReturn {
             setCurrentRound(event.round);
             setActiveAgent(null);
             clearThinkingBuffer();
-            if (event.round === 3) {
-              setStatus("synthesizing");
-            }
+            setStatus("in_progress");
+            break;
+          case "consensus_start":
+            setCurrentRound(event.round);
+            setActiveAgent(null);
+            clearThinkingBuffer();
+            setStatus("synthesizing");
             break;
           case "consensus":
             setConsensus(event.data);

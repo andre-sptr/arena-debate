@@ -9,6 +9,9 @@ from typing_extensions import Annotated
 from operator import add
 
 
+MAX_DEBATE_ROUNDS = 7
+
+
 class ArgumentDict(TypedDict):
     """Structure for a single argument in the debate"""
     agent_name: str
@@ -36,7 +39,7 @@ class DebateState(TypedDict):
     
     Fields:
         topic: The debate topic
-        current_round: Current round number (1-3)
+        current_round: Current round number (1-7)
         arguments: List of all arguments generated so far (accumulated)
         consensus: Final consensus after all rounds
         status: Current status of the debate (pending, in_progress, completed, failed)
@@ -106,7 +109,8 @@ def is_debate_complete(state: DebateState) -> bool:
     """
     Check if the debate is complete.
 
-    A debate is complete when DebateState["current_round"] is greater than 7
+    A debate is complete when DebateState["current_round"] has reached
+    MAX_DEBATE_ROUNDS
     and DebateState["consensus"] has been generated.
     
     Args:
@@ -115,7 +119,10 @@ def is_debate_complete(state: DebateState) -> bool:
     Returns:
         True if debate is complete, False otherwise
     """
-    return state["current_round"] > 7 and state["consensus"] is not None
+    return (
+        state["current_round"] >= MAX_DEBATE_ROUNDS
+        and state["consensus"] is not None
+    )
 
 
 def has_error(state: DebateState) -> bool:

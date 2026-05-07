@@ -96,7 +96,7 @@ async def start_debate(
     Start a new debate session.
     
     This endpoint initiates a multi-agent debate on the provided topic.
-    The debate runs through 3 rounds with 4 agents, then generates a consensus.
+    The debate runs up to 7 rounds with 4 agents, then generates a consensus.
     
     Args:
         request: Debate configuration with topic
@@ -140,6 +140,7 @@ async def start_debate(
             )
             for arg in debate_state["arguments"]
         ]
+        total_rounds = max((arg.round_number for arg in arguments), default=0)
         
         consensus = None
         if debate_state.get("consensus"):
@@ -157,7 +158,7 @@ async def start_debate(
             status=debate_state["status"],
             arguments=arguments,
             consensus=consensus,
-            total_rounds=3,
+            total_rounds=total_rounds,
             total_arguments=len(arguments),
             created_at=debate_state.get("created_at", ""),
             completed_at=debate_state.get("completed_at")

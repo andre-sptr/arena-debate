@@ -130,6 +130,10 @@ export type DebateStreamEvent =
       round: number;
     }
   | {
+      type: "consensus_start";
+      round: number;
+    }
+  | {
       type: "consensus";
       data: Consensus;
     }

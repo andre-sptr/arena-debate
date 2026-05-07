@@ -68,6 +68,16 @@ Build production:
 npm run build
 ```
 
+Lint:
+
+```bash
+npm run lint
+```
+
+Catatan: `npm run lint` saat ini belum menjadi check non-interaktif karena Next.js
+akan meminta setup ESLint jika konfigurasi belum ada. Verifikasi utama lokal adalah
+`npm run type-check`, test Node di folder `tests/`, dan `npm run build`.
+
 Run production build:
 
 ```bash
@@ -266,4 +276,4 @@ sudo systemctl restart arena-backend
 - `https://domainanda.com` bisa dibuka.
 - `NEXT_PUBLIC_API_URL` mengarah ke backend production.
 - Backend CORS mengizinkan domain frontend.
-- Live debate stream berjalan sampai consensus.
+- Live debate stream berjalan sampai consensus atau maksimum 7 ronde.

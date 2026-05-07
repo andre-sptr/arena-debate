@@ -196,6 +196,23 @@ async def test_run_debate_stream_starts_model_generation_while_streaming_thinkin
 
 
 @pytest.mark.asyncio
+async def test_run_debate_sync_stops_after_max_rounds():
+    orchestrator = make_orchestrator()
+    orchestrator.workflow = orchestrator._build_workflow()
+
+    state = await orchestrator.run_debate(
+        topic="Should cities ban cars?",
+        debate_id="sync-max-rounds",
+    )
+
+    round_numbers = [argument["round_number"] for argument in state["arguments"]]
+
+    assert state["status"] == "completed"
+    assert max(round_numbers) == 7
+    assert len(state["arguments"]) == 28
+
+
+@pytest.mark.asyncio
 async def test_run_debate_stream_yields_incremental_events_and_stores_final_state():
     orchestrator = make_orchestrator()
     stored = []
@@ -292,12 +309,14 @@ async def test_run_debate_stream_yields_incremental_events_and_stores_final_stat
         "thinking",
         "thinking",
         "thinking",
+        "consensus_start",
         "consensus",
         "complete",
     ]
     assert events[0]["round"] == 1
     assert events[26]["round"] == 2
     assert events[52]["round"] == 3
+    assert events[-3] == {"type": "consensus_start", "round": 3}
     assert events[-1]["debate_id"] == "debate-1"
 
     argument_events = [event for event in events if event["type"] == "argument"]
@@ -493,6 +512,7 @@ async def test_store_debate_results_replaces_existing_debate_and_arguments():
 
         assert debate.topic == "Updated topic"
         assert debate.status == DebateStatus.COMPLETED
+        assert debate.total_rounds == 2
         assert debate.total_arguments == 2
         assert [arg["content"] for arg in debate.arguments] == [
             "new first argument",

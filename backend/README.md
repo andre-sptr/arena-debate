@@ -7,6 +7,7 @@ FastAPI backend untuk Arena AI Debate. Service ini menangani:
 - Endpoint history: `/history`
 - Database SQLite lokal via SQLAlchemy async
 - Integrasi Google Gemini lewat LangChain
+- Alur debat berjalan sampai konsensus atau maksimum 7 ronde
 
 ## Prasyarat Lokal
 

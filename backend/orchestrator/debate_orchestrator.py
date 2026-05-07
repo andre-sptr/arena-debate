@@ -2,7 +2,8 @@
 Debate Orchestrator using LangGraph
 
 This module implements the multi-agent debate workflow using LangGraph's
-StateGraph for managing the debate flow through 3 rounds and consensus generation.
+StateGraph for managing the debate flow through up to 7 rounds and consensus
+generation.
 """
 from typing import AsyncIterator, Dict, Any, List, Optional
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ from .state import (
     DebateState,
     ArgumentDict,
     ConsensusDict,
+    MAX_DEBATE_ROUNDS,
     create_initial_state,
     get_previous_arguments,
     has_error,
@@ -32,11 +34,9 @@ class DebateOrchestrator:
     """
     Orchestrates multi-agent debates using LangGraph state machine.
     
-    The orchestrator manages a 3-round debate between 4 agents:
-    1. Round 1: Opening arguments from all agents
-    2. Round 2: Responses to previous arguments
-    3. Round 3: Closing statements
-    4. Consensus: Final synthesis of all arguments
+    The orchestrator manages a debate between 4 agents:
+    1. Rounds 1-7: Arguments continue until consensus or max rounds
+    2. Consensus: Final synthesis of all arguments
     """
     
     def __init__(self):
@@ -393,7 +393,7 @@ class DebateOrchestrator:
         
         # Check if we've completed all rounds
         current_round = state["current_round"]
-        if current_round > 7:
+        if current_round >= MAX_DEBATE_ROUNDS:
             return "consensus"
         
         # Continue to next round
@@ -467,7 +467,7 @@ class DebateOrchestrator:
                 print(f"[Orchestrator] Error storing initial debate state: {e}")
 
         try:
-            for round_number in range(1, 8):
+            for round_number in range(1, MAX_DEBATE_ROUNDS + 1):
                 state["current_round"] = round_number
                 state["status"] = "in_progress"
                 previous_args = get_previous_arguments(state)
@@ -550,11 +550,18 @@ class DebateOrchestrator:
                 if is_consensus:
                     print(f"[Orchestrator] Consensus reached in Round {round_number}!")
                     break
-                elif round_number == 7:
-                    print("[Orchestrator] Max rounds (7) reached. Finalizing.")
+                elif round_number == MAX_DEBATE_ROUNDS:
+                    print(
+                        f"[Orchestrator] Max rounds ({MAX_DEBATE_ROUNDS}) "
+                        "reached. Finalizing."
+                    )
                     break
 
             # Final Consensus Generation
+            yield {
+                "type": "consensus_start",
+                "round": round_number,
+            }
             all_args_dict = [dict(arg) for arg in state["arguments"]]
             consensus_data = await self._generate_consensus_with_retry(topic, all_args_dict)
             consensus = ConsensusDict(
@@ -610,6 +617,10 @@ class DebateOrchestrator:
         arguments_payload = [dict(arg) for arg in state["arguments"]]
         consensus_payload = dict(state["consensus"]) if state["consensus"] else None
         completed_at = datetime.now(timezone.utc) if state["status"] == "completed" else None
+        total_rounds = max(
+            (arg["round_number"] for arg in state["arguments"]),
+            default=0,
+        )
 
         for attempt in range(3):
             try:
@@ -627,7 +638,7 @@ class DebateOrchestrator:
                 debate.status = DebateStatus(state["status"])
                 debate.arguments = arguments_payload
                 debate.consensus = consensus_payload
-                debate.total_rounds = state["current_round"] - 1
+                debate.total_rounds = total_rounds
                 debate.total_arguments = len(arguments_payload)
                 debate.completed_at = completed_at
 
