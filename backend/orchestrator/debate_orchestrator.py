@@ -507,7 +507,11 @@ class DebateOrchestrator:
                             if self.thinking_event_delay > 0:
                                 await asyncio.sleep(self.thinking_event_delay)
 
-                        content = await generation_task
+                        while not generation_task.done():
+                            await asyncio.sleep(2)
+                            yield {"type": "keepalive"}
+                        
+                        content = generation_task.result()
                     finally:
                         if not generation_task.done():
                             generation_task.cancel()
@@ -545,7 +549,13 @@ class DebateOrchestrator:
                     yield thinking_event
                 
                 print(f"[Orchestrator] Round {round_number} complete. Checking consensus...")
-                is_consensus = await self.ai_service.check_consensus(topic, state["arguments"], round_number)
+                check_task = asyncio.create_task(
+                    self.ai_service.check_consensus(topic, state["arguments"], round_number)
+                )
+                while not check_task.done():
+                    await asyncio.sleep(2)
+                    yield {"type": "keepalive"}
+                is_consensus = check_task.result()
                 
                 if is_consensus:
                     print(f"[Orchestrator] Consensus reached in Round {round_number}!")
@@ -563,7 +573,15 @@ class DebateOrchestrator:
                 "round": round_number,
             }
             all_args_dict = [dict(arg) for arg in state["arguments"]]
-            consensus_data = await self._generate_consensus_with_retry(topic, all_args_dict)
+            
+            consensus_task = asyncio.create_task(
+                self._generate_consensus_with_retry(topic, all_args_dict)
+            )
+            while not consensus_task.done():
+                await asyncio.sleep(2)
+                yield {"type": "keepalive"}
+                
+            consensus_data = consensus_task.result()
             consensus = ConsensusDict(
                 content=consensus_data["content"],
                 key_points=consensus_data["key_points"],
