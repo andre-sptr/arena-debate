@@ -316,7 +316,7 @@ class APIClient {
    * ```
    */
   async listDebates(params?: PaginationParams): Promise<ListDebatesResponse> {
-    return this.request<ListDebatesResponse>("/debate/", {
+    return this.request<ListDebatesResponse>("/debate", {
       params: params as Record<string, any>,
     });
   }
@@ -335,7 +335,7 @@ class APIClient {
    * ```
    */
   async getHistory(params?: PaginationParams): Promise<GetHistoryResponse> {
-    return this.request<GetHistoryResponse>("/history/", {
+    return this.request<GetHistoryResponse>("/history", {
       params: params as Record<string, any>,
     });
   }
