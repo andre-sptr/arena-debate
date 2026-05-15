@@ -49,7 +49,7 @@ class AIService:
             model=settings.default_model,
             temperature=settings.temperature,
             max_tokens=settings.max_output_tokens,  # config default: 300
-            api_key=settings.anthropic_api_key,
+            anthropic_api_key=settings.anthropic_api_key,
         )
         
         # Initialize consensus model — needs more room for synthesis + key points.
@@ -57,7 +57,7 @@ class AIService:
             model=settings.consensus_model,
             temperature=settings.temperature,
             max_tokens=settings.consensus_max_output_tokens,  # config default: 1024
-            api_key=settings.anthropic_api_key,
+            anthropic_api_key=settings.anthropic_api_key,
         )
 
     def _build_argument_prompt(
