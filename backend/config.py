@@ -8,8 +8,8 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
-    # Google Gemini API
-    google_api_key: str = ""
+    # Anthropic API
+    anthropic_api_key: str = ""
     
     # Database
     database_url: str = "sqlite+aiosqlite:///./arena.db"
@@ -27,10 +27,11 @@ class Settings(BaseSettings):
     max_concurrent_debates: int = 5
     
     # AI Model Configuration
-    default_model: str = "gemini-3.1-pro-preview"
-    consensus_model: str = "gemini-3.1-pro-preview"
+    default_model: str = "claude-haiku-4-5-20251001"
+    consensus_model: str = "claude-haiku-4-5-20251001"
     max_output_tokens: int = 300
-    temperature: float = 0.8
+    consensus_max_output_tokens: int = 1024
+    temperature: float = 0.5
     thinking_budget: int = 1024
     ai_request_timeout: float = 60.0
     

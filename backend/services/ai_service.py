@@ -1,11 +1,21 @@
 """
-AI Service for managing Gemini API interactions
+AI Service for managing Anthropic Claude API interactions
 """
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from typing import List, Dict, Any, AsyncIterator, Optional, Union
 import os
 from config import get_settings
+
+
+# Maximum number of previous arguments to include in context for debate agents.
+# Only the most recent arguments are sent to save input tokens while preserving
+# enough context for coherent rebuttals.
+_MAX_CONTEXT_ARGS = 4
+
+# Maximum number of recent arguments the judge sees when checking consensus.
+# The judge only needs the latest round(s) to decide if the debate is cycling.
+_MAX_JUDGE_ARGS = 8
 
 
 def _extract_text(content: Union[str, List[Union[str, Dict[str, Any]]], Dict[str, Any]]) -> str:
@@ -28,27 +38,28 @@ def _extract_text(content: Union[str, List[Union[str, Dict[str, Any]]], Dict[str
 
 
 class AIService:
-    """Service for interacting with Google Gemini API"""
+    """Service for interacting with Anthropic Claude API"""
     
     def __init__(self):
-        """Initialize AI service with Gemini models"""
+        """Initialize AI service with Anthropic Claude models"""
         settings = get_settings()
         
         # Set API key from settings
-        os.environ["GOOGLE_API_KEY"] = settings.google_api_key
+        os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
         
-        # Initialize default model for agents
-        self.default_model = ChatGoogleGenerativeAI(
+        # Initialize default model for agents — capped to max_output_tokens from config.
+        # Debate arguments should be 2-4 sentences; no need for a large budget.
+        self.default_model = ChatAnthropic(
             model=settings.default_model,
             temperature=settings.temperature,
-            max_tokens=4096,  # Removed token limit, give agents freedom
+            max_tokens=settings.max_output_tokens,  # config default: 300
         )
         
-        # Initialize consensus model (note: thinking features not available in langchain-google-genai 2.0.5)
-        self.consensus_model = ChatGoogleGenerativeAI(
+        # Initialize consensus model — needs more room for synthesis + key points.
+        self.consensus_model = ChatAnthropic(
             model=settings.consensus_model,
             temperature=settings.temperature,
-            max_tokens=4096,  # Significantly more tokens for consensus as thinking models need a large budget
+            max_tokens=settings.consensus_max_output_tokens,  # config default: 1024
         )
 
     def _build_argument_prompt(
@@ -62,57 +73,44 @@ class AIService:
     ) -> str:
         """
         Build the shared human prompt for normal and streamed arguments.
+        Only includes the most recent previous arguments to minimize input tokens.
         """
         previous_arguments = previous_arguments or []
         is_team_a_opening = agent_name in {"optimist_1", "optimist_2"} and not previous_arguments
 
-        prompt = f"Debate Topic (the claim to debate): {topic}\n\n"
+        prompt = f"Topic: {topic}\n\n"
+        prompt += "Respond in the SAME LANGUAGE as the topic.\n\n"
         prompt += (
-            "CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
-            "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
-            "If the topic is in English, respond in English. Match the topic's language exactly.\n\n"
+            "Format: PRO vs CONTRA\n"
+            "Team A (PRO): Nova & Forge — defend the claim\n"
+            "Team B (CONTRA): Silas & Vance — oppose the claim\n"
+            "Judge: Andre\n\n"
         )
         prompt += (
-            "Debate Format: PRO vs CONTRA\n"
-            "- Team A (PRO): Nova and Forge defend and support the topic's claim\n"
-            "- Team B (CONTRA): Silas and Vance challenge and oppose the topic's claim\n"
-            "- Judge: Andre evaluates both sides\n\n"
-        )
-        prompt += (
-            "Debate rules:\n"
-            "- FOCUS ON THE TOPIC ITSELF: Is the claim true or false? Valid or invalid?\n"
-            "- Team A (PRO) must present evidence, reasoning, and examples that the topic IS TRUE/VALID\n"
-            "- Team B (CONTRA) must present evidence, reasoning, and examples that the topic IS FALSE/INVALID or present the opposite position\n"
-            "- Write 2-4 concise sentences with clear claim, reasoning, and evidence\n"
-            "- Use historical precedent, real-world cases, or known facts when relevant\n"
-            "- Do not invent statistics; use cautious qualitative evidence if exact data is uncertain\n"
-            "- Stay focused on debating the VALIDITY OF THE TOPIC, not side issues\n\n"
+            "Rules: 2-4 concise sentences. Claim + reasoning + evidence. "
+            "No invented statistics. Stay on topic.\n\n"
         )
 
         if is_team_a_opening:
-            prompt += (
-                "Opening constraint for Team A (PRO): Do not name Team B in your opening. "
-                "Simply present your strongest case for WHY THE TOPIC IS TRUE with clear evidence and reasoning.\n\n"
-            )
+            prompt += "Opening: Present your strongest PRO case without naming Team B.\n\n"
         else:
-            prompt += (
-                "Debate guidance: Directly address the core arguments about the topic's validity. "
-                "Answer the strongest version of the opposing position.\n\n"
-            )
+            prompt += "Directly address the opposing side's core arguments.\n\n"
 
         if context:
-            prompt += f"Context for this round: {context}\n\n"
+            prompt += f"Context: {context}\n\n"
 
-        if previous_arguments:
-            prompt += "Previous arguments in this debate:\n"
-            for arg in previous_arguments:
+        # Sliding window — only include the last _MAX_CONTEXT_ARGS arguments
+        recent_args = previous_arguments[-_MAX_CONTEXT_ARGS:] if previous_arguments else []
+        if recent_args:
+            prompt += "Recent arguments:\n"
+            for arg in recent_args:
                 name = arg.get("agent_display_name", arg.get("agent_name", "Unknown"))
                 prompt += f"- {name} ({arg['agent_role']}): {arg['content']}\n"
             prompt += "\n"
 
         prompt += (
-            f"As {agent_display_name} ({agent_role}), provide your argument about the topic's validity. "
-            "Stay focused on whether the topic's claim is true or false."
+            f"As {agent_display_name} ({agent_role}), give your argument. "
+            "2-4 sentences only."
         )
         return prompt
     
@@ -156,31 +154,26 @@ class AIService:
     ) -> bool:
         """
         Ask the Judge to decide if consensus has been reached.
+        Only sends the most recent arguments to minimize token usage.
         
         Returns:
             True if consensus reached, False otherwise.
         """
-        system_prompt = """You are Andre, the Judge. Your task is to evaluate if a PRO vs CONTRA debate has reached a TRUE consensus or if it has become genuinely redundant.
-
-Evaluation Process:
-1. Briefly analyze if both teams have addressed the core question: Is the topic's claim true/valid?
-2. Check if any SIGNIFICANT new evidence or reasoning was introduced in the latest round.
-3. Determine if the debate is starting to go in circles.
-
-Decision Guidelines:
-- Round 1-2: Almost NEVER end unless the topic is trivial.
-- Round 3-4: End if the core validity question has been thoroughly explored and both sides are repeating themselves.
-- Round 5-6: End if no new ground is being broken. We want to avoid fatigue.
-
-Format your response as follows:
-ANALYSIS: [1-2 sentences of your reasoning]
-DECISION: [YES or NO]"""
+        system_prompt = (
+            "You are Andre, the Judge. Decide if the PRO vs CONTRA debate should end.\n"
+            "Rules: Round 1-2 almost never end. Round 3-4 end if both sides repeat. "
+            "Round 5+ end if no new ground.\n"
+            "Reply ONLY: ANALYSIS: [1 sentence] DECISION: [YES or NO]"
+        )
         
-        prompt = f"Debate Topic: {topic}\nRound: {round_number}\n\nArguments so far:\n"
-        for arg in all_arguments:
+        # Sliding window — judge only needs recent arguments
+        recent_args = all_arguments[-_MAX_JUDGE_ARGS:]
+        
+        prompt = f"Topic: {topic}\nRound: {round_number}\n\nRecent arguments:\n"
+        for arg in recent_args:
             prompt += f"- {arg['agent_role']}: {arg['content']}\n"
         
-        prompt += f"\nWe are currently at the end of Round {round_number}. Provide your analysis and then your DECISION (YES or NO)."
+        prompt += f"\nEnd of Round {round_number}. DECISION?"
         
         messages = [
             SystemMessage(content=system_prompt),
@@ -205,7 +198,7 @@ DECISION: [YES or NO]"""
         all_arguments: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Generate consensus from all arguments using thinking model.
+        Generate consensus from all arguments.
         
         Args:
             topic: The debate topic
@@ -214,51 +207,42 @@ DECISION: [YES or NO]"""
         Returns:
             Dictionary with consensus content and key points
         """
-        system_prompt = """You are The Mediator, a balanced and diplomatic AI that synthesizes 
-        PRO and CONTRA perspectives into a fair consensus. Your role is to:
-        1. Acknowledge both the PRO arguments (supporting the topic) and CONTRA arguments (opposing the topic)
-        2. Identify what evidence and reasoning each side presented
-        3. Present a balanced conclusion about the topic's validity
-        4. Highlight key insights from both perspectives"""
+        system_prompt = (
+            "You are The Mediator. Synthesize PRO and CONTRA into a balanced consensus.\n"
+            "1. Acknowledge both sides\n"
+            "2. Present a balanced conclusion\n"
+            "3. List key insights"
+        )
         
-        # Build prompt with all arguments
-        prompt = f"Debate Topic: {topic}\n\n"
+        # Build prompt with all arguments (consensus needs full picture)
+        prompt = f"Topic: {topic}\n\n"
+        prompt += "Respond in the SAME LANGUAGE as the topic.\n\n"
         
-        # Auto-language instruction
-        prompt += ("CRITICAL INSTRUCTION: You MUST respond in the EXACT SAME LANGUAGE as the debate topic above. "
-                   "If the topic is in Indonesian, you MUST respond entirely in Indonesian. "
-                   "If the topic is in English, respond in English. Match the topic's language exactly.\n\n")
-        
-        prompt += "Arguments from PRO side (supporting the topic):\n"
+        prompt += "PRO arguments:\n"
         for arg in all_arguments:
             if arg['agent_name'] in ['optimist_1', 'optimist_2']:
-                prompt += f"{arg['agent_role']}: {arg['content']}\n"
+                prompt += f"- {arg['content']}\n"
         
-        prompt += "\nArguments from CONTRA side (opposing the topic):\n"
+        prompt += "\nCONTRA arguments:\n"
         for arg in all_arguments:
             if arg['agent_name'] in ['devil_1', 'devil_2']:
-                prompt += f"{arg['agent_role']}: {arg['content']}\n"
+                prompt += f"- {arg['content']}\n"
         
-        prompt += """
-Based on these PRO and CONTRA perspectives, provide:
-        1. A balanced consensus that acknowledges both sides' strongest points (3-4 sentences)
-        2. 3-5 key insights that emerged from the debate
-        
-        Format your response as:
-        CONSENSUS: [your balanced synthesis here]
-        
-        KEY POINTS:
-        - [point 1]
-        - [point 2]
-        - [point 3]
-        """
+        prompt += (
+            "\nProvide:\n"
+            "CONSENSUS: [3-4 sentences balanced synthesis]\n\n"
+            "KEY POINTS:\n"
+            "- [point 1]\n"
+            "- [point 2]\n"
+            "- [point 3]"
+        )
         
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=prompt)
         ]
         
-        # Generate consensus with thinking
+        # Generate consensus
         response = await self.consensus_model.ainvoke(messages)
         
         # Parse response - handle content which can be str or list
