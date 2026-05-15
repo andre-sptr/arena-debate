@@ -55,7 +55,7 @@ class StatsResponse(BaseModel):
     avg_arguments_per_debate: float
 
 
-@router.get("/", response_model=List[HistoryItemResponse])
+@router.get("", response_model=List[HistoryItemResponse])
 async def get_history(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=1000, description="Maximum number of records to return"),

@@ -298,7 +298,7 @@ async def get_debate(
         )
 
 
-@router.get("/", response_model=List[DebateResponse])
+@router.get("", response_model=List[DebateResponse])
 async def list_debates(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=1000, description="Maximum number of records to return"),
