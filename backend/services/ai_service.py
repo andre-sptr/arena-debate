@@ -4,7 +4,6 @@ AI Service for managing Anthropic Claude API interactions
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from typing import List, Dict, Any, AsyncIterator, Optional, Union
-import os
 from config import get_settings
 
 
@@ -44,15 +43,13 @@ class AIService:
         """Initialize AI service with Anthropic Claude models"""
         settings = get_settings()
         
-        # Set API key from settings
-        os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
-        
         # Initialize default model for agents — capped to max_output_tokens from config.
         # Debate arguments should be 2-4 sentences; no need for a large budget.
         self.default_model = ChatAnthropic(
             model=settings.default_model,
             temperature=settings.temperature,
             max_tokens=settings.max_output_tokens,  # config default: 300
+            api_key=settings.anthropic_api_key,
         )
         
         # Initialize consensus model — needs more room for synthesis + key points.
@@ -60,6 +57,7 @@ class AIService:
             model=settings.consensus_model,
             temperature=settings.temperature,
             max_tokens=settings.consensus_max_output_tokens,  # config default: 1024
+            api_key=settings.anthropic_api_key,
         )
 
     def _build_argument_prompt(
